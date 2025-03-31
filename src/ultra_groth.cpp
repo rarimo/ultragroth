@@ -85,35 +85,15 @@ namespace UltraGroth {
         LOG_DEBUG(E.fr.toString(a[1]).c_str());
         LOG_TRACE("Start FFT A");
         fft->fft(a, domainSize);
-        LOG_TRACE("a After fft:");
-        LOG_DEBUG(E.fr.toString(a[0]).c_str());
-        LOG_DEBUG(E.fr.toString(a[1]).c_str());
-        LOG_TRACE("Start iFFT B");
         fft->ifft(b, domainSize);
-        LOG_TRACE("b After ifft:");
-        LOG_DEBUG(E.fr.toString(b[0]).c_str());
-        LOG_DEBUG(E.fr.toString(b[1]).c_str());
-        LOG_TRACE("Start Shift B");
         threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
             for (u_int64_t i=begin; i<end; i++) {
                 E.fr.mul(b[i], b[i], fft->root(domainPower+1, i));
             }
         });
-        LOG_TRACE("b After shift:");
-        LOG_DEBUG(E.fr.toString(b[0]).c_str());
-        LOG_DEBUG(E.fr.toString(b[1]).c_str());
-        LOG_TRACE("Start FFT B");
+        
         fft->fft(b, domainSize);
-        LOG_TRACE("b After fft:");
-        LOG_DEBUG(E.fr.toString(b[0]).c_str());
-        LOG_DEBUG(E.fr.toString(b[1]).c_str());
-    
-        LOG_TRACE("Start iFFT C");
         fft->ifft(c, domainSize);
-        LOG_TRACE("c After ifft:");
-        LOG_DEBUG(E.fr.toString(c[0]).c_str());
-        LOG_DEBUG(E.fr.toString(c[1]).c_str());
-        LOG_TRACE("Start Shift C");
         threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
             for (u_int64_t i=begin; i<end; i++) {
                 E.fr.mul(c[i], c[i], fft->root(domainPower+1, i));
@@ -139,7 +119,7 @@ namespace UltraGroth {
         LOG_TRACE("abc:");
         LOG_DEBUG(E.fr.toString(a[0]).c_str());
         LOG_DEBUG(E.fr.toString(a[1]).c_str());
-
+        
 
         // Plug for now
         return nullptr;
