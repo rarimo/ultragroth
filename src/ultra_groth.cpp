@@ -15,6 +15,35 @@ namespace UltraGroth {
     ) {
         ThreadPool &threadPool = ThreadPool::defaultPool();
 
+        LOG_TRACE("Start Multiexp A");
+        uint32_t sW = sizeof(wtns[0]);
+        typename Engine::G1Point pi_a;
+        E.g1.multiMulByScalarMSM(pi_a, pointsA, (uint8_t *)wtns, sW, nVars);
+        std::ostringstream ss2;
+        ss2 << "pi_a: " << E.g1.toString(pi_a);
+        LOG_DEBUG(ss2);
+        
+        LOG_TRACE("Start Multiexp B1");
+        typename Engine::G1Point pib1;
+        E.g1.multiMulByScalarMSM(pib1, pointsB1, (uint8_t *)wtns, sW, nVars);
+        std::ostringstream ss3;
+        ss3 << "pib1: " << E.g1.toString(pib1);
+        LOG_DEBUG(ss3);
+        
+        LOG_TRACE("Start Multiexp B2");
+        typename Engine::G2Point pi_b;
+        E.g2.multiMulByScalarMSM(pi_b, pointsB2, (uint8_t *)wtns, sW, nVars);
+        std::ostringstream ss4;
+        ss4 << "pi_b: " << E.g2.toString(pi_b);
+        LOG_DEBUG(ss4);
+        
+        LOG_TRACE("Start Multiexp C");
+        typename Engine::G1Point pi_c;
+        E.g1.multiMulByScalarMSM(pi_c, pointsC, (uint8_t *)((uint64_t)wtns + (nPublic +1)*sW), sW, nVars-nPublic-1);
+        std::ostringstream ss5;
+        ss5 << "pi_c: " << E.g1.toString(pi_c);
+        LOG_DEBUG(ss5);
+
         // a b c here is L, R, O matrixes as I understand it
         LOG_TRACE("Start Initializing a b c A");
         auto a = new typename Engine::FrElement[domainSize];
@@ -119,7 +148,62 @@ namespace UltraGroth {
         LOG_TRACE("abc:");
         LOG_DEBUG(E.fr.toString(a[0]).c_str());
         LOG_DEBUG(E.fr.toString(a[1]).c_str());
-        
+
+        delete [] b;
+        delete [] c;
+
+        LOG_TRACE("Start Multiexp H");
+        typename Engine::G1Point pih;
+        E.g1.multiMulByScalarMSM(pih, pointsH, (uint8_t *)a, sizeof(a[0]), domainSize);
+        std::ostringstream ss1;
+        ss1 << "pih: " << E.g1.toString(pih);
+        LOG_DEBUG(ss1);
+
+        delete [] a;
+
+        typename Engine::FrElement r;
+        typename Engine::FrElement s;
+        typename Engine::FrElement rs;
+
+        E.fr.copy(r, E.fr.zero());
+        E.fr.copy(s, E.fr.zero());
+
+        randombytes_buf((void *)&(r.v[0]), sizeof(r)-1);
+        randombytes_buf((void *)&(s.v[0]), sizeof(s)-1);
+
+        typename Engine::G1Point p1;
+        typename Engine::G2Point p2;
+
+        E.g1.add(pi_a, pi_a, vk_alpha1);
+        E.g1.mulByScalar(p1, vk_delta1, (uint8_t *)&r, sizeof(r));
+        E.g1.add(pi_a, pi_a, p1);
+
+        E.g2.add(pi_b, pi_b, vk_beta2);
+        E.g2.mulByScalar(p2, vk_delta2, (uint8_t *)&s, sizeof(s));
+        E.g2.add(pi_b, pi_b, p2);
+
+        E.g1.add(pib1, pib1, vk_beta1);
+        E.g1.mulByScalar(p1, vk_delta1, (uint8_t *)&s, sizeof(s));
+        E.g1.add(pib1, pib1, p1);
+
+        E.g1.add(pi_c, pi_c, pih);
+
+        E.g1.mulByScalar(p1, pi_a, (uint8_t *)&s, sizeof(s));
+        E.g1.add(pi_c, pi_c, p1);
+
+        E.g1.mulByScalar(p1, pib1, (uint8_t *)&r, sizeof(r));
+        E.g1.add(pi_c, pi_c, p1);
+
+        E.fr.mul(rs, r, s);
+        E.fr.toMontgomery(rs, rs);
+
+        E.g1.mulByScalar(p1, vk_delta1, (uint8_t *)&rs, sizeof(rs));
+        E.g1.sub(pi_c, pi_c, p1);
+
+        // Proof<Engine> *p = new Proof<Engine>(Engine::engine);
+        // E.g1.copy(p->A, pi_a);
+        // E.g2.copy(p->B, pi_b);
+        // E.g1.copy(p->C, pi_c);
 
         // Plug for now
         return nullptr;
