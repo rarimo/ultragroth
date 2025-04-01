@@ -3,6 +3,7 @@
 
 #include <string>
 #include <array>
+#include <tuple>
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
@@ -121,7 +122,7 @@ namespace UltraGroth {
             delete fft;
         }
 
-        std::unique_ptr<Proof<Engine>> execute_final_round(typename Engine::FrElement *wtns);
+        std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine> execute_final_round(typename Engine::FrElement *wtns);
     };
 
     template <typename Engine>

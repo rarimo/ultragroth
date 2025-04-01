@@ -4,6 +4,7 @@
 #include <sstream>
 #include <vector>
 #include <mutex>
+#include <tuple>
 
 namespace UltraGroth {
 
@@ -51,7 +52,7 @@ std::unique_ptr<FinalRound<Engine>> prepare_final_round(
 }
 
 template <typename Engine>
-std::unique_ptr<Proof<Engine>> FinalRound<Engine>::execute_final_round(typename Engine::FrElement *wtns) {
+std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine> FinalRound<Engine>::execute_final_round(typename Engine::FrElement *wtns) {
 
     ThreadPool &threadPool = ThreadPool::defaultPool();
 
@@ -262,12 +263,10 @@ std::unique_ptr<Proof<Engine>> FinalRound<Engine>::execute_final_round(typename 
     // here should be subtraction of round randomness * round commitment, however I do not understand mulByScalar function yet; 
     // I suspect it reassigns value of first argument
 
-    Proof<Engine> *p = new Proof<Engine>(Engine::engine);
-    E.g1.copy(p->A, pi_a);
-    E.g2.copy(p->B, pi_b);
-    E.g1.copy(p->final_commitment, pi_c);
+    E.g1.mulByScalar(p1, round_delta_g1, (uint8_t *)&round_random_factor, sizeof(round_random_factor));
+    E.g1.sub(pi_c, pi_c, p1);
 
-    return std::unique_ptr<Proof<Engine>>(p);
+    return {pi_a, pi_b, pi_c};
 }
 
 template <typename Engine>
