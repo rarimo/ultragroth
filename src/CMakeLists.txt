@@ -121,6 +121,9 @@ set_target_properties(rapidsnarkStaticFrFq PROPERTIES OUTPUT_NAME rapidsnark-fr-
 add_executable(prover main_prover.cpp)
 target_link_libraries(prover rapidsnarkStatic)
 
+add_executable(ultra_groth main_ultra_groth.cpp)
+target_link_libraries(ultra_groth rapidsnarkStatic)
+
 add_executable(verifier main_verifier.cpp)
 target_link_libraries(verifier rapidsnarkStatic)
 
