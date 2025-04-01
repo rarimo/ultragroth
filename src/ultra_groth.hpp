@@ -85,17 +85,17 @@ namespace UltraGroth {
             typename Engine::G1PointAffine &_vk_alpha1,
             typename Engine::G1PointAffine &_vk_beta1,
             typename Engine::G2PointAffine &_vk_beta2,
-            typename Engine::G1PointAffine &final_delta_g1;
-            typename Engine::G2PointAffine &final_delta_g2;
-            typename Engine::G2PointAffine &round_delta_g1;
-            typename Engine::Fr::Element &round_random_factor;
+            typename Engine::G1PointAffine &_final_delta_g1,
+            typename Engine::G2PointAffine &_final_delta_g2,
+            typename Engine::G2PointAffine &_round_delta_g1,
+            typename Engine::Fr::Element &_round_random_factor,
             Coef<Engine> *_coefs, 
             typename Engine::G1PointAffine *_pointsA,
             typename Engine::G1PointAffine *_pointsB1,
             typename Engine::G2PointAffine *_pointsB2,
             typename Engine::G1PointAffine *_pointsC,
             typename Engine::G1PointAffine *_pointsH
-        ) : 
+        ): 
             E(_E), 
             nVars(_nVars),
             nPublic(_nPublic),
