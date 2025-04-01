@@ -9,11 +9,11 @@
 namespace UltraGroth {
 
 template <typename Engine>
-std::unique_ptr<FinalRound<Engine>> prepare_final_round(
-    u_int32_t nVars, 
-    u_int32_t nPublic, 
-    u_int32_t domainSize, 
-    u_int64_t nCoeffs, 
+std::unique_ptr<Round<Engine>> prepare_final_round(
+    uint32_t nVars, 
+    uint32_t nPublic, 
+    uint32_t domainSize, 
+    uint64_t nCoeffs, 
     void *vk_alpha1,
     void *vk_beta_1,
     void *vk_beta_2,
@@ -28,7 +28,7 @@ std::unique_ptr<FinalRound<Engine>> prepare_final_round(
     void *pointsC, 
     void *pointsH
 ) {
-    FinalRound<Engine> *p = new FinalRound<Engine>(
+    Round<Engine> *p = new Round<Engine>(
         Engine::engine, 
         nVars, 
         nPublic, 
@@ -48,11 +48,21 @@ std::unique_ptr<FinalRound<Engine>> prepare_final_round(
         (typename Engine::G1PointAffine *)pointsC,
         (typename Engine::G1PointAffine *)pointsH
     );
-    return std::unique_ptr< FinalRound<Engine> >(p);
+    return std::unique_ptr< Round<Engine> >(p);
 }
 
 template <typename Engine>
-std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine> FinalRound<Engine>::execute_final_round(typename Engine::FrElement *wtns) {
+std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
+Round<Engine>::execute_round() {
+    
+
+    // Plug for now
+    return nullptr;
+}
+
+template <typename Engine>
+std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
+Round<Engine>::execute_final_round() {
 
     ThreadPool &threadPool = ThreadPool::defaultPool();
 
@@ -91,7 +101,7 @@ std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typen
     auto c = new typename Engine::FrElement[domainSize];
 
     threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
-        for (u_int32_t i=begin; i<end; i++) {
+        for (uint32_t i=begin; i<end; i++) {
             E.fr.copy(a[i], E.fr.zero());
             E.fr.copy(b[i], E.fr.zero());
         }
@@ -103,7 +113,7 @@ std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typen
     std::vector<std::mutex> locks(NLOCKS);
 
     threadPool.parallelFor(0, nCoefs, [&] (int64_t begin, int64_t end, uint64_t idThread) {
-        for (u_int64_t i=begin; i<end; i++) {
+        for (uint64_t i=begin; i<end; i++) {
             typename Engine::FrElement *ab = (coefs[i].m == 0) ? a : b;
             typename Engine::FrElement aux;
 
@@ -124,7 +134,7 @@ std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typen
     });
     LOG_TRACE("Calculating c");
     threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
-        for (u_int64_t i=begin; i<end; i++) {
+        for (uint64_t i=begin; i<end; i++) {
             E.fr.mul(
                 c[i],
                 a[i],
@@ -134,7 +144,7 @@ std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typen
     });
 
     LOG_TRACE("Initializing fft");
-    u_int32_t domainPower = fft->log2(domainSize);
+    uint32_t domainPower = fft->log2(domainSize);
 
     LOG_TRACE("Start iFFT A");
     fft->ifft(a, domainSize);
@@ -144,7 +154,7 @@ std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typen
     LOG_TRACE("Start Shift A");
 
     threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
-        for (u_int64_t i=begin; i<end; i++) {
+        for (uint64_t i=begin; i<end; i++) {
             E.fr.mul(a[i], a[i], fft->root(domainPower+1, i));
         }
     });
@@ -164,7 +174,7 @@ std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typen
     LOG_DEBUG(E.fr.toString(b[1]).c_str());
     LOG_TRACE("Start Shift B");
     threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
-        for (u_int64_t i=begin; i<end; i++) {
+        for (uint64_t i=begin; i<end; i++) {
             E.fr.mul(b[i], b[i], fft->root(domainPower+1, i));
         }
     });
@@ -184,7 +194,7 @@ std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typen
     LOG_DEBUG(E.fr.toString(c[1]).c_str());
     LOG_TRACE("Start Shift C");
     threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
-        for (u_int64_t i=begin; i<end; i++) {
+        for (uint64_t i=begin; i<end; i++) {
             E.fr.mul(c[i], c[i], fft->root(domainPower+1, i));
         }
     });
@@ -199,7 +209,7 @@ std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typen
 
     LOG_TRACE("Start ABC");
     threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
-        for (u_int64_t i=begin; i<end; i++) {
+        for (uint64_t i=begin; i<end; i++) {
             E.fr.mul(a[i], a[i], b[i]);
             E.fr.sub(a[i], a[i], c[i]);
             E.fr.fromMontgomery(a[i], a[i]);
@@ -806,7 +816,7 @@ namespace UltraGroth {
         auto c = new typename Engine::FrElement[domainSize];
 
         threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
-            for (u_int32_t i=begin; i<end; i++) {
+            for (uint32_t i=begin; i<end; i++) {
                 E.fr.copy(a[i], E.fr.zero());
                 E.fr.copy(b[i], E.fr.zero());
             }
@@ -818,7 +828,7 @@ namespace UltraGroth {
         std::vector<std::mutex> locks(NLOCKS);
     
         threadPool.parallelFor(0, nCoefs, [&] (int64_t begin, int64_t end, uint64_t idThread) {
-            for (u_int64_t i=begin; i<end; i++) {
+            for (uint64_t i=begin; i<end; i++) {
                 typename Engine::FrElement *ab = (coefs[i].m == 0) ? a : b;
                 typename Engine::FrElement aux;
     
@@ -839,7 +849,7 @@ namespace UltraGroth {
         });
         LOG_TRACE("Calculating c");
         threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
-            for (u_int64_t i=begin; i<end; i++) {
+            for (uint64_t i=begin; i<end; i++) {
                 E.fr.mul(
                     c[i],
                     a[i],
@@ -849,7 +859,7 @@ namespace UltraGroth {
         });
     
         LOG_TRACE("Initializing fft");
-        u_int32_t domainPower = fft->log2(domainSize);
+        uint32_t domainPower = fft->log2(domainSize);
     
         LOG_TRACE("Start iFFT A");
         fft->ifft(a, domainSize);
@@ -859,7 +869,7 @@ namespace UltraGroth {
         LOG_TRACE("Start Shift A");
     
         threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
-            for (u_int64_t i=begin; i<end; i++) {
+            for (uint64_t i=begin; i<end; i++) {
                 E.fr.mul(a[i], a[i], fft->root(domainPower+1, i));
             }
         });
@@ -871,7 +881,7 @@ namespace UltraGroth {
         fft->fft(a, domainSize);
         fft->ifft(b, domainSize);
         threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
-            for (u_int64_t i=begin; i<end; i++) {
+            for (uint64_t i=begin; i<end; i++) {
                 E.fr.mul(b[i], b[i], fft->root(domainPower+1, i));
             }
         });
@@ -879,7 +889,7 @@ namespace UltraGroth {
         fft->fft(b, domainSize);
         fft->ifft(c, domainSize);
         threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
-            for (u_int64_t i=begin; i<end; i++) {
+            for (uint64_t i=begin; i<end; i++) {
                 E.fr.mul(c[i], c[i], fft->root(domainPower+1, i));
             }
         });
@@ -894,7 +904,7 @@ namespace UltraGroth {
     
         LOG_TRACE("Start ABC");
         threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
-            for (u_int64_t i=begin; i<end; i++) {
+            for (uint64_t i=begin; i<end; i++) {
                 E.fr.mul(a[i], a[i], b[i]);
                 E.fr.sub(a[i], a[i], c[i]);
                 E.fr.fromMontgomery(a[i], a[i]);

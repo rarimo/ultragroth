@@ -3,13 +3,14 @@
 
 #include <string>
 #include <array>
+#include <vector>
 #include <tuple>
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
 #include "fft.hpp"
 
-// TODO Change all u_int type to uint (for crossplatform system)
+
 namespace UltraGroth {
 
     template <typename Engine>
@@ -45,21 +46,21 @@ namespace UltraGroth {
 #pragma pack(push, 1)
     template <typename Engine>
     struct Coef {
-        u_int32_t m;
-        u_int32_t c;
-        u_int32_t s;
+        uint32_t m;
+        uint32_t c;
+        uint32_t s;
         typename Engine::FrElement coef;
     };
 #pragma pack(pop)
 
     template <typename Engine>
-    class FinalRound {
+    class Round {
 
         Engine &E;
-        u_int32_t nVars;
-        u_int32_t nPublic;
-        u_int32_t domainSize;
-        u_int64_t nCoefs;
+        uint32_t nVars;
+        uint32_t nPublic;
+        uint32_t domainSize;
+        uint64_t nCoefs;
         typename Engine::G1PointAffine &vk_alpha1;
         typename Engine::G1PointAffine &vk_beta1;
         typename Engine::G2PointAffine &vk_beta2;
@@ -73,15 +74,17 @@ namespace UltraGroth {
         typename Engine::G2PointAffine *pointsB2;
         typename Engine::G1PointAffine *pointsC;
         typename Engine::G1PointAffine *pointsH;
+        typename Engine::FrElement *wtns;
+        uint32_t *wtns_indexes;
 
         FFT<typename Engine::Fr> *fft;
     public:
-        FinalRound(
+        Round(
             Engine &_E, 
-            u_int32_t _nVars, 
-            u_int32_t _nPublic, 
-            u_int32_t _domainSize, 
-            u_int64_t _nCoefs, 
+            uint32_t _nVars, 
+            uint32_t _nPublic, 
+            uint32_t _domainSize, 
+            uint64_t _nCoefs, 
             typename Engine::G1PointAffine &_vk_alpha1,
             typename Engine::G1PointAffine &_vk_beta1,
             typename Engine::G2PointAffine &_vk_beta2,
@@ -94,9 +97,11 @@ namespace UltraGroth {
             typename Engine::G1PointAffine *_pointsB1,
             typename Engine::G2PointAffine *_pointsB2,
             typename Engine::G1PointAffine *_pointsC,
-            typename Engine::G1PointAffine *_pointsH
-        ): 
-            E(_E), 
+            typename Engine::G1PointAffine *_pointsH,
+            typename Engine::FrElement *_wtns,
+            uint32_t *_wtns_indexes
+        ) :
+            E(_E),
             nVars(_nVars),
             nPublic(_nPublic),
             domainSize(_domainSize),
@@ -113,24 +118,30 @@ namespace UltraGroth {
             pointsB1(_pointsB1),
             pointsB2(_pointsB2),
             pointsC(_pointsC),
-            pointsH(_pointsH)
-        { 
+            pointsH(_pointsH),
+            wtns(_wtns),
+            wtns_indexes(_wtns_indexes)
+        {
             fft = new FFT<typename Engine::Fr>(domainSize*2);
         }
 
-        ~FinalRound() {
+        ~Round() {
             delete fft;
         }
 
-        std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine> execute_final_round(typename Engine::FrElement *wtns);
+        std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
+        execute_round();
+
+        std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
+        execute_final_round();
     };
 
     template <typename Engine>
-    std::unique_ptr<FinalRound<Engine>> prepare_final_round(
-        u_int32_t nVars, 
-        u_int32_t nPublic, 
-        u_int32_t domainSize, 
-        u_int64_t nCoefs, 
+    std::unique_ptr<Round<Engine>> prepare_final_round(
+        uint32_t nVars, 
+        uint32_t nPublic, 
+        uint32_t domainSize, 
+        uint64_t nCoefs, 
         void *vk_alpha1,
         void *vk_beta1,
         void *vk_beta2,
