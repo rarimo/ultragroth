@@ -8,7 +8,7 @@
 namespace UltraGroth {
 
 template <typename Engine>
-std::unique_ptr<Prover<Engine>> makeProver(
+std::unique_ptr<FinalRound<Engine>> prepare_final_round(
     u_int32_t nVars, 
     u_int32_t nPublic, 
     u_int32_t domainSize, 
@@ -16,8 +16,10 @@ std::unique_ptr<Prover<Engine>> makeProver(
     void *vk_alpha1,
     void *vk_beta_1,
     void *vk_beta_2,
-    void *vk_delta_1,
-    void *vk_delta_2,
+    void *final_delta_g1,
+    void *final_delta_g2,
+    void *round_delta_g1,
+    void *round_random_factor,
     void *coefs, 
     void *pointsA, 
     void *pointsB1, 
@@ -25,7 +27,7 @@ std::unique_ptr<Prover<Engine>> makeProver(
     void *pointsC, 
     void *pointsH
 ) {
-    Prover<Engine> *p = new Prover<Engine>(
+    FinalRound<Engine> *p = new FinalRound<Engine>(
         Engine::engine, 
         nVars, 
         nPublic, 
@@ -34,8 +36,10 @@ std::unique_ptr<Prover<Engine>> makeProver(
         *(typename Engine::G1PointAffine *)vk_alpha1,
         *(typename Engine::G1PointAffine *)vk_beta_1,
         *(typename Engine::G2PointAffine *)vk_beta_2,
-        *(typename Engine::G1PointAffine *)vk_delta_1,
-        *(typename Engine::G2PointAffine *)vk_delta_2,
+        *(typename Engine::G1PointAffine *)final_delta_g1,
+        *(typename Engine::G2PointAffine *)final_delta_g2,
+        *(typename Engine::G2PointAffine *)round_delta_g1,
+        *(typename Engine::G2PointAffine *)round_random_factor,
         (Coef<Engine> *)((uint64_t)coefs + 4), 
         (typename Engine::G1PointAffine *)pointsA,
         (typename Engine::G1PointAffine *)pointsB1,
@@ -43,11 +47,11 @@ std::unique_ptr<Prover<Engine>> makeProver(
         (typename Engine::G1PointAffine *)pointsC,
         (typename Engine::G1PointAffine *)pointsH
     );
-    return std::unique_ptr< Prover<Engine> >(p);
+    return std::unique_ptr< FinalRound<Engine> >(p);
 }
 
 template <typename Engine>
-std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement *wtns) {
+std::unique_ptr<Proof<Engine>> FinalRound<Engine>::execute_final_round(typename Engine::FrElement *wtns) {
 
     ThreadPool &threadPool = ThreadPool::defaultPool();
 
@@ -230,15 +234,15 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
     typename Engine::G2Point p2;
 
     E.g1.add(pi_a, pi_a, vk_alpha1);
-    E.g1.mulByScalar(p1, vk_delta1, (uint8_t *)&r, sizeof(r));
+    E.g1.mulByScalar(p1, final_delta_g1, (uint8_t *)&r, sizeof(r));
     E.g1.add(pi_a, pi_a, p1);
 
     E.g2.add(pi_b, pi_b, vk_beta2);
-    E.g2.mulByScalar(p2, vk_delta2, (uint8_t *)&s, sizeof(s));
+    E.g2.mulByScalar(p2, final_delta_g2, (uint8_t *)&s, sizeof(s));
     E.g2.add(pi_b, pi_b, p2);
 
     E.g1.add(pib1, pib1, vk_beta1);
-    E.g1.mulByScalar(p1, vk_delta1, (uint8_t *)&s, sizeof(s));
+    E.g1.mulByScalar(p1, final_delta_g1, (uint8_t *)&s, sizeof(s));
     E.g1.add(pib1, pib1, p1);
 
     E.g1.add(pi_c, pi_c, pih);
@@ -252,13 +256,16 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
     E.fr.mul(rs, r, s);
     E.fr.toMontgomery(rs, rs);
 
-    E.g1.mulByScalar(p1, vk_delta1, (uint8_t *)&rs, sizeof(rs));
+    E.g1.mulByScalar(p1, final_delta_g1, (uint8_t *)&rs, sizeof(rs));
     E.g1.sub(pi_c, pi_c, p1);
+
+    // here should be subtraction of round randomness * round commitment, however I do not understand mulByScalar function yet; 
+    // I suspect it reassigns value of first argument
 
     Proof<Engine> *p = new Proof<Engine>(Engine::engine);
     E.g1.copy(p->A, pi_a);
     E.g2.copy(p->B, pi_b);
-    E.g1.copy(p->C, pi_c);
+    E.g1.copy(p->final_commitment, pi_c);
 
     return std::unique_ptr<Proof<Engine>>(p);
 }
@@ -269,7 +276,7 @@ std::string Proof<Engine>::toJsonStr() {
     std::ostringstream ss;
     ss << "{ \"pi_a\":[\"" << E.f1.toString(A.x) << "\",\"" << E.f1.toString(A.y) << "\",\"1\"], ";
     ss << " \"pi_b\": [[\"" << E.f1.toString(B.x.a) << "\",\"" << E.f1.toString(B.x.b) << "\"],[\"" << E.f1.toString(B.y.a) << "\",\"" << E.f1.toString(B.y.b) << "\"], [\"1\",\"0\"]], ";
-    ss << " \"pi_c\": [\"" << E.f1.toString(C.x) << "\",\"" << E.f1.toString(C.y) << "\",\"1\"], ";
+    ss << " \"pi_c\": [\"" << E.f1.toString(final_commitment.x) << "\",\"" << E.f1.toString(final_commitment.y) << "\",\"1\"], ";
     ss << " \"protocol\":\"groth16\" }";
         
     return ss.str();
@@ -301,8 +308,8 @@ json Proof<Engine>::toJson() {
     p["pi_b"].push_back(z2);
 
     p["pi_c"] = {};
-    p["pi_c"].push_back(E.f1.toString(C.x) );
-    p["pi_c"].push_back(E.f1.toString(C.y) );
+    p["pi_c"].push_back(E.f1.toString(final_commitment.x) );
+    p["pi_c"].push_back(E.f1.toString(final_commitment.y) );
     p["pi_c"].push_back("1" );
 
     p["protocol"] = "groth16";
@@ -333,7 +340,7 @@ void Proof<Engine>::fromJson(const json& proof)
 {
     G1PointAffineFromJson(E, A, proof["pi_a"]);
     G2PointAffineFromJson(E, B, proof["pi_b"]);
-    G1PointAffineFromJson(E, C, proof["pi_c"]);
+    G1PointAffineFromJson(E, final_commitment, proof["pi_c"]);
 }
 
 template <typename Engine>
@@ -404,7 +411,7 @@ bool Verifier<Engine>::verify(Proof<Engine> &proof, InputsVector &inputs,
     E.g1.neg(negvkX, vkX);
 
     typename Engine::G1Point negC;
-    E.g1.neg(negC, proof.C);
+    E.g1.neg(negC, proof.final_commitment);
 
     typename Engine::G2Point pB;
     E.g2.copy(pB, proof.B);

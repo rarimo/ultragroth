@@ -17,7 +17,8 @@ namespace UltraGroth {
     public:
         typename Engine::G1PointAffine A;
         typename Engine::G2PointAffine B;
-        typename Engine::G1PointAffine C;
+        typename Engine::G1PointAffine final_commitment;
+        typename Engine::G1PointAffine round_commitment;
 
         Proof(Engine &_E) : E(_E) { }
         std::string toJsonStr();
@@ -51,7 +52,7 @@ namespace UltraGroth {
 #pragma pack(pop)
 
     template <typename Engine>
-    class Prover {
+    class FinalRound {
 
         Engine &E;
         u_int32_t nVars;
@@ -61,10 +62,10 @@ namespace UltraGroth {
         typename Engine::G1PointAffine &vk_alpha1;
         typename Engine::G1PointAffine &vk_beta1;
         typename Engine::G2PointAffine &vk_beta2;
-        typename Engine::G1PointAffine &vk_delta1;
-        typename Engine::G2PointAffine &vk_delta2;
-        // We should add here array of deltas from prevoius commitements; This are elements of G1 group
-        // (Or maybe not) We should add here array of blinding factors r_k from prevoius commitements; This are elements of Fr group
+        typename Engine::G1PointAffine &final_delta_g1;
+        typename Engine::G2PointAffine &final_delta_g2;
+        typename Engine::G2PointAffine &round_delta_g1;
+        typename Engine::Fr::Element &round_random_factor;
         Coef<Engine> *coefs;
         typename Engine::G1PointAffine *pointsA;
         typename Engine::G1PointAffine *pointsB1;
@@ -74,7 +75,7 @@ namespace UltraGroth {
 
         FFT<typename Engine::Fr> *fft;
     public:
-        Prover(
+        FinalRound(
             Engine &_E, 
             u_int32_t _nVars, 
             u_int32_t _nPublic, 
@@ -83,8 +84,10 @@ namespace UltraGroth {
             typename Engine::G1PointAffine &_vk_alpha1,
             typename Engine::G1PointAffine &_vk_beta1,
             typename Engine::G2PointAffine &_vk_beta2,
-            typename Engine::G1PointAffine &_vk_delta1,
-            typename Engine::G2PointAffine &_vk_delta2,
+            typename Engine::G1PointAffine &final_delta_g1;
+            typename Engine::G2PointAffine &final_delta_g2;
+            typename Engine::G2PointAffine &round_delta_g1;
+            typename Engine::Fr::Element &round_random_factor;
             Coef<Engine> *_coefs, 
             typename Engine::G1PointAffine *_pointsA,
             typename Engine::G1PointAffine *_pointsB1,
@@ -100,8 +103,10 @@ namespace UltraGroth {
             vk_alpha1(_vk_alpha1),
             vk_beta1(_vk_beta1),
             vk_beta2(_vk_beta2),
-            vk_delta1(_vk_delta1),
-            vk_delta2(_vk_delta2),
+            final_delta_g1(_final_delta_g1),
+            final_delta_g2(_final_delta_g2),
+            round_delta_g1(_round_delta_g1),
+            round_random_factor(_round_random_factor),
             coefs(_coefs),
             pointsA(_pointsA),
             pointsB1(_pointsB1),
@@ -112,15 +117,15 @@ namespace UltraGroth {
             fft = new FFT<typename Engine::Fr>(domainSize*2);
         }
 
-        ~Prover() {
+        ~FinalRound() {
             delete fft;
         }
 
-        std::unique_ptr<Proof<Engine>> prove(typename Engine::FrElement *wtns);
+        std::unique_ptr<Proof<Engine>> execute_final_round(typename Engine::FrElement *wtns);
     };
 
     template <typename Engine>
-    std::unique_ptr<Prover<Engine>> makeProver(
+    std::unique_ptr<FinalRound<Engine>> prepare_final_round(
         u_int32_t nVars, 
         u_int32_t nPublic, 
         u_int32_t domainSize, 
@@ -128,8 +133,10 @@ namespace UltraGroth {
         void *vk_alpha1,
         void *vk_beta1,
         void *vk_beta2,
-        void *vk_delta1,
-        void *vk_delta2,
+        void *final_delta_g1,
+        void *final_delta_g2,
+        void *round_delta_g1,
+        void *round_random_factor,
         // array of deltas from and factors r_k (maybe factors k)
         void *coefs,
         void *pointsA,
