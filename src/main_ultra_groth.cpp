@@ -41,8 +41,9 @@ int main() {
                                 commitment.y.v[0], commitment.y.v[1], commitment.y.v[2], commitment.y.v[3]};
     memcpy(buffer + 32, points_bytes, 8 * sizeof(uint64_t));
     for(int i = 0; i < 96; i++) {
-        std::cout << "" << static_cast<int>(buffer[i]) << " ";
+        std::cout << static_cast<int>(buffer[i]) << " ";
     }
-
+    
+    std::cout << std::endl;
     return 0;
 }

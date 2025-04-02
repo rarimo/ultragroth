@@ -5,6 +5,7 @@
 #include <vector>
 #include <mutex>
 #include <tuple>
+#include <openssl/sha.h>
 
 namespace UltraGroth {
 
@@ -36,10 +37,8 @@ Prover<Engine>::execute_round(
                                 commitment.y.v[0], commitment.y.v[1], commitment.y.v[2], commitment.y.v[3]};
     memcpy(buffer + 32, points_bytes, 8 * sizeof(uint64_t));
     
-    //SHA256(buffer, 32*3, accumulator);
-    
+    SHA256(buffer, 32*3, accumulator);
     return {commitment, r};
-    
 }
     
 
