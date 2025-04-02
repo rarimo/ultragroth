@@ -280,6 +280,255 @@ Round<Engine>::execute_final_round() {
 }
 
 template <typename Engine>
+typename Engine::G1PointAffine
+UltraGirthProver<Engine>::execute_round(
+    typename Engine::FrElement *round_wtns, uint64_t wtns_count, uint8_t *accumulator
+) {
+    LOG_TRACE("Start Multiexp round commitments");
+    uint32_t sW = sizeof(wtns[0]);
+    typename Engine::G1Point commitment;
+    E.g1.multiMulByScalarMSM(commitment, round_pointsC, (uint8_t *)round_wtns, sW, wtns_count);
+    std::ostringstream ss2;
+    ss2 << "commitment: " << E.g1.toString(commitment);
+    LOG_DEBUG(ss2);
+}
+
+template <typename Engine>
+std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
+UltraGirthProver<Engine>::execute_final_round(
+    typename Engine::FrElement *wtns, 
+    typename Engine::FrElement *final_wtns,
+    typename Engine::Fr::Element round_random_factor
+) {
+    ThreadPool &threadPool = ThreadPool::defaultPool();
+
+    LOG_TRACE("Start Multiexp A");
+    uint32_t sW = sizeof(wtns[0]);
+    typename Engine::G1Point pi_a;
+    E.g1.multiMulByScalarMSM(pi_a, pointsA, (uint8_t *)wtns, sW, nVars);
+    std::ostringstream ss2;
+    ss2 << "pi_a: " << E.g1.toString(pi_a);
+    LOG_DEBUG(ss2);
+
+    LOG_TRACE("Start Multiexp B1");
+    typename Engine::G1Point pib1;
+    E.g1.multiMulByScalarMSM(pib1, pointsB1, (uint8_t *)wtns, sW, nVars);
+    std::ostringstream ss3;
+    ss3 << "pib1: " << E.g1.toString(pib1);
+    LOG_DEBUG(ss3);
+
+    LOG_TRACE("Start Multiexp B2");
+    typename Engine::G2Point pi_b;
+    E.g2.multiMulByScalarMSM(pi_b, pointsB2, (uint8_t *)wtns, sW, nVars);
+    std::ostringstream ss4;
+    ss4 << "pi_b: " << E.g2.toString(pi_b);
+    LOG_DEBUG(ss4);
+
+    // There defenitely will be bug here with indices; fix later 
+    LOG_TRACE("Start Multiexp C");
+    typename Engine::G1Point pi_c;
+    E.g1.multiMulByScalarMSM(pi_c, final_pointsC, (uint8_t *)((uint64_t)wtns + (nPublic +1)*sW) /* here should be final wtns 
+                                                                                                elements; change later*/, 
+                            sW, nVars-nPublic-1 /*here should be final wtns count*/);
+    std::ostringstream ss5;
+    ss5 << "pi_c: " << E.g1.toString(pi_c);
+    LOG_DEBUG(ss5);
+
+    LOG_TRACE("Start Initializing a b c A");
+    auto a = new typename Engine::FrElement[domainSize];
+    auto b = new typename Engine::FrElement[domainSize];
+    auto c = new typename Engine::FrElement[domainSize];
+
+    threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
+        for (uint32_t i=begin; i<end; i++) {
+            E.fr.copy(a[i], E.fr.zero());
+            E.fr.copy(b[i], E.fr.zero());
+        }
+    });
+
+
+    // Following code computes sum_k {h_k * Z_k}
+    LOG_TRACE("Processing coefs");
+
+    #define NLOCKS 1024
+    std::vector<std::mutex> locks(NLOCKS);
+
+    threadPool.parallelFor(0, nCoefs, [&] (int64_t begin, int64_t end, uint64_t idThread) {
+        for (uint64_t i=begin; i<end; i++) {
+            typename Engine::FrElement *ab = (coefs[i].m == 0) ? a : b;
+            typename Engine::FrElement aux;
+
+            E.fr.mul(
+                aux,
+                wtns[coefs[i].s],
+                coefs[i].coef
+            );
+
+            std::lock_guard<std::mutex> guard(locks[coefs[i].c % NLOCKS]);
+
+            E.fr.add(
+                ab[coefs[i].c],
+                ab[coefs[i].c],
+                aux
+            );
+        }
+    });
+    LOG_TRACE("Calculating c");
+    threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
+        for (uint64_t i=begin; i<end; i++) {
+            E.fr.mul(
+                c[i],
+                a[i],
+                b[i]
+            );
+        }
+    });
+
+    LOG_TRACE("Initializing fft");
+    uint32_t domainPower = fft->log2(domainSize);
+
+    LOG_TRACE("Start iFFT A");
+    fft->ifft(a, domainSize);
+    LOG_TRACE("a After ifft:");
+    LOG_DEBUG(E.fr.toString(a[0]).c_str());
+    LOG_DEBUG(E.fr.toString(a[1]).c_str());
+    LOG_TRACE("Start Shift A");
+
+    threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
+        for (uint64_t i=begin; i<end; i++) {
+            E.fr.mul(a[i], a[i], fft->root(domainPower+1, i));
+        }
+    });
+
+    LOG_TRACE("a After shift:");
+    LOG_DEBUG(E.fr.toString(a[0]).c_str());
+    LOG_DEBUG(E.fr.toString(a[1]).c_str());
+    LOG_TRACE("Start FFT A");
+    fft->fft(a, domainSize);
+    LOG_TRACE("a After fft:");
+    LOG_DEBUG(E.fr.toString(a[0]).c_str());
+    LOG_DEBUG(E.fr.toString(a[1]).c_str());
+    LOG_TRACE("Start iFFT B");
+    fft->ifft(b, domainSize);
+    LOG_TRACE("b After ifft:");
+    LOG_DEBUG(E.fr.toString(b[0]).c_str());
+    LOG_DEBUG(E.fr.toString(b[1]).c_str());
+    LOG_TRACE("Start Shift B");
+    threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
+        for (uint64_t i=begin; i<end; i++) {
+            E.fr.mul(b[i], b[i], fft->root(domainPower+1, i));
+        }
+    });
+    LOG_TRACE("b After shift:");
+    LOG_DEBUG(E.fr.toString(b[0]).c_str());
+    LOG_DEBUG(E.fr.toString(b[1]).c_str());
+    LOG_TRACE("Start FFT B");
+    fft->fft(b, domainSize);
+    LOG_TRACE("b After fft:");
+    LOG_DEBUG(E.fr.toString(b[0]).c_str());
+    LOG_DEBUG(E.fr.toString(b[1]).c_str());
+
+    LOG_TRACE("Start iFFT C");
+    fft->ifft(c, domainSize);
+    LOG_TRACE("c After ifft:");
+    LOG_DEBUG(E.fr.toString(c[0]).c_str());
+    LOG_DEBUG(E.fr.toString(c[1]).c_str());
+    LOG_TRACE("Start Shift C");
+    threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
+        for (uint64_t i=begin; i<end; i++) {
+            E.fr.mul(c[i], c[i], fft->root(domainPower+1, i));
+        }
+    });
+    LOG_TRACE("c After shift:");
+    LOG_DEBUG(E.fr.toString(c[0]).c_str());
+    LOG_DEBUG(E.fr.toString(c[1]).c_str());
+    LOG_TRACE("Start FFT C");
+    fft->fft(c, domainSize);
+    LOG_TRACE("c After fft:");
+    LOG_DEBUG(E.fr.toString(c[0]).c_str());
+    LOG_DEBUG(E.fr.toString(c[1]).c_str());
+
+    LOG_TRACE("Start ABC");
+    threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
+        for (uint64_t i=begin; i<end; i++) {
+            E.fr.mul(a[i], a[i], b[i]);
+            E.fr.sub(a[i], a[i], c[i]);
+            E.fr.fromMontgomery(a[i], a[i]);
+        }
+    });
+    LOG_TRACE("abc:");
+    LOG_DEBUG(E.fr.toString(a[0]).c_str());
+    LOG_DEBUG(E.fr.toString(a[1]).c_str());
+
+    delete [] b;
+    delete [] c;
+
+    LOG_TRACE("Start Multiexp H");
+    typename Engine::G1Point pih;
+    E.g1.multiMulByScalarMSM(pih, pointsH, (uint8_t *)a, sizeof(a[0]), domainSize);
+    std::ostringstream ss1;
+    ss1 << "pih: " << E.g1.toString(pih);
+    LOG_DEBUG(ss1);
+
+    delete [] a;
+
+    // initializing variables for blinding factors
+    typename Engine::FrElement r;
+    typename Engine::FrElement s;
+    typename Engine::FrElement rs;
+
+    E.fr.copy(r, E.fr.zero());
+    E.fr.copy(s, E.fr.zero());
+
+    randombytes_buf((void *)&(r.v[0]), sizeof(r)-1);
+    randombytes_buf((void *)&(s.v[0]), sizeof(s)-1);
+
+    // tmp variables for storing products
+    typename Engine::G1Point p1;
+    typename Engine::G2Point p2;
+
+    // Add to r * [delta_1]_g1 to first proof point
+    E.g1.add(pi_a, pi_a, alpha1);
+    E.g1.mulByScalar(p1, final_delta1, (uint8_t *)&r, sizeof(r));
+    E.g1.add(pi_a, pi_a, p1);
+
+    // Add to s * [delta_2]_g2 to second proof point
+    E.g2.add(pi_b, pi_b, beta2);
+    E.g2.mulByScalar(p2, final_delta2, (uint8_t *)&s, sizeof(s));
+    E.g2.add(pi_b, pi_b, p2);
+
+    // Add to s * [delta_1]_g1 to auxiliar proof point
+    E.g1.add(pib1, pib1, beta1);
+    E.g1.mulByScalar(p1, final_delta1, (uint8_t *)&s, sizeof(s));
+    E.g1.add(pib1, pib1, p1);
+
+    // Add target polynomial sum to third proof point
+    E.g1.add(pi_c, pi_c, pih);
+
+    // Add s * first_point to third proof point
+    E.g1.mulByScalar(p1, pi_a, (uint8_t *)&s, sizeof(s));
+    E.g1.add(pi_c, pi_c, p1);
+
+    // Add auxiliary point to third proof point
+    E.g1.mulByScalar(p1, pib1, (uint8_t *)&r, sizeof(r));
+    E.g1.add(pi_c, pi_c, p1);
+
+    // Mutliply r and s and convert to montgomery form
+    E.fr.mul(rs, r, s);
+    E.fr.toMontgomery(rs, rs);
+
+    // Subtract from third proof point r * [delta_final_1]_g1
+    E.g1.mulByScalar(p1, final_delta1, (uint8_t *)&rs, sizeof(rs));
+    E.g1.sub(pi_c, pi_c, p1);
+
+    // Subtract from third proof point round randomness * round commitment
+    E.g1.mulByScalar(p1, round_delta1, (uint8_t *)&round_random_factor, sizeof(round_random_factor));
+    E.g1.sub(pi_c, pi_c, p1);
+
+    return {pi_a, pi_b, pi_c};
+};
+
+template <typename Engine>
 std::string Proof<Engine>::toJsonStr() {
 
     std::ostringstream ss;

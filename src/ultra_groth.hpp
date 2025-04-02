@@ -54,6 +54,79 @@ namespace UltraGroth {
 #pragma pack(pop)
 
     template <typename Engine>
+    class UltraGirthProver{
+
+        Engine &E;
+        u_int32_t nVars;
+        u_int32_t nPublic;
+        u_int32_t domainSize;
+        u_int64_t nCoefs;
+        // Toxic waste wrapped into corresponding groups
+        typename Engine::G1PointAffine &alpha1;
+        typename Engine::G1PointAffine &beta1;
+        typename Engine::G2PointAffine &beta2;
+        typename Engine::G1PointAffine &final_delta1;
+        typename Engine::G2PointAffine &final_delta2;
+        
+        typename Engine::G1PointAffine &round_delta1;
+        // Probably matrix coefficients
+        Coef<Engine> *coefs;
+        // [interpolated polynomials from L matrix evaluated in tau]_g1
+        typename Engine::G1PointAffine *pointsA;
+        // [interpolated polynomials from R matrix evaluated in tau]_g1
+        typename Engine::G1PointAffine *pointsB1;
+        // [interpolated polynomials from R matrix evaluated in tau]_g2
+        typename Engine::G2PointAffine *pointsB2;
+        // [(Oj + beta * Lj + alpha * Rj) / delta]_g1 for final round
+        typename Engine::G1PointAffine *final_pointsC;
+        // [(Oj + beta * Lj + alpha * Rj) / delta]_g1 for common round
+        typename Engine::G1PointAffine *round_pointsC;
+        // Probably points of target polynomail - [(tau * Z(tau)) / delta]_g1
+        typename Engine::G1PointAffine *pointsH;
+
+        FFT<typename Engine::Fr> *fft;
+    public:
+        UltraGirthProver(
+            Engine &E,
+            u_int32_t nVars,
+            u_int32_t nPublic,
+            u_int32_t domainSize,
+            u_int64_t nCoefs,
+            typename Engine::G1PointAffine &alpha1,
+            typename Engine::G1PointAffine &beta1,
+            typename Engine::G2PointAffine &beta2,
+            typename Engine::G1PointAffine &final_delta1,
+            typename Engine::G2PointAffine &final_delta2,
+            typename Engine::G1PointAffine &round_delta1,
+            Coef<Engine> *coefs,
+            typename Engine::G1PointAffine *pointsA,
+            typename Engine::G1PointAffine *pointsB1,
+            typename Engine::G2PointAffine *pointsB2,
+            typename Engine::G1PointAffine *final_pointsC,
+            typename Engine::G1PointAffine *round_pointsC,
+            typename Engine::G1PointAffine *pointsH
+        )
+        { 
+            fft = new FFT<typename Engine::Fr>(domainSize*2);
+        }
+
+        ~UltraGirthProver() {
+            delete fft;
+        }
+
+        // Function to execute entire proving process
+        std::unique_ptr<Proof<Engine>> prove(typename Engine::FrElement *wtns);
+
+        // Function to execute final round of proving process
+        std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
+        execute_final_round(typename Engine::FrElement *wtns, typename Engine::FrElement *final_wtns, typename Engine::Fr::Element round_random_factor);
+
+        // Function to execute common round of proving process
+        // Pointer to accumulator is passed to function; accumulator size is 32
+        typename Engine::G1PointAffine execute_round(typename Engine::FrElement *round_wtns, uint64_t wtns_count, uint8_t *accumulator);
+    };
+
+    template <typename Engine>
     class Round {
 
         Engine &E;
