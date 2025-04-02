@@ -9,9 +9,9 @@
 namespace UltraGroth {
 
 template <typename Engine>
-typename Engine::G1PointAffine
+std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement>
 Prover<Engine>::execute_round(
-    typename Engine::FrElement *round_wtns, uint64_t wtns_count, uint8_t *accumulator
+    typename Engine::FrElement *round_wtns, uint64_t wtns_count, unsigned char *accumulator
 ) {
     LOG_TRACE("Start Multiexp round commitments");
     uint32_t sW = sizeof(wtns[0]);
@@ -20,7 +20,26 @@ Prover<Engine>::execute_round(
     std::ostringstream ss2;
     ss2 << "commitment: " << E.g1.toString(commitment);
     LOG_DEBUG(ss2);
+    
+    typename Engine::FrElement r;
+    typename Engine::G1Point tmp;
+    E.fr.copy(r, E.fr.zero());
+    randombytes_buf((void *)&(r.v[0]), sizeof(r)-1);
+    
+    // Add blinding factor r_k
+    E.g1.mulByScalar(tmp, round_delta1, (uint8_t *)&r, sizeof(r));
+    E.g1.add(commitment, commitment, tmp);
+    
+    unsigned char buffer[32 + 2 * 32];
+    memcpy(buffer, accumulator, 32 * sizeof(unsigned char));
+    // need to copy x, y coordinates of commitment to buffer as bytes
+    
+    SHA256(buffer, length, accumulator);
+    
+    return {commitment, r};
+    
 }
+    
 
 template <typename Engine>
 std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
