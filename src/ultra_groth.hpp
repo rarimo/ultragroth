@@ -54,7 +54,7 @@ namespace UltraGroth {
 #pragma pack(pop)
 
     template <typename Engine>
-    class UltraGirthProver{
+    class Prover{
 
         Engine &E;
         u_int32_t nVars;
@@ -86,31 +86,49 @@ namespace UltraGroth {
 
         FFT<typename Engine::Fr> *fft;
     public:
-        UltraGirthProver(
-            Engine &E,
-            u_int32_t nVars,
-            u_int32_t nPublic,
-            u_int32_t domainSize,
-            u_int64_t nCoefs,
-            typename Engine::G1PointAffine &alpha1,
-            typename Engine::G1PointAffine &beta1,
-            typename Engine::G2PointAffine &beta2,
-            typename Engine::G1PointAffine &final_delta1,
-            typename Engine::G2PointAffine &final_delta2,
-            typename Engine::G1PointAffine &round_delta1,
-            Coef<Engine> *coefs,
-            typename Engine::G1PointAffine *pointsA,
-            typename Engine::G1PointAffine *pointsB1,
-            typename Engine::G2PointAffine *pointsB2,
-            typename Engine::G1PointAffine *final_pointsC,
-            typename Engine::G1PointAffine *round_pointsC,
-            typename Engine::G1PointAffine *pointsH
-        )
-        { 
+        Prover(
+            Engine &_E,
+            u_int32_t _nVars,
+            u_int32_t _nPublic,
+            u_int32_t _domainSize,
+            u_int64_t _nCoefs,
+            typename Engine::G1PointAffine &_alpha1,
+            typename Engine::G1PointAffine &_beta1,
+            typename Engine::G2PointAffine &_beta2,
+            typename Engine::G1PointAffine &_final_delta1,
+            typename Engine::G2PointAffine &_final_delta2,
+            typename Engine::G1PointAffine &_round_delta1,
+            Coef<Engine> *_coefs,
+            typename Engine::G1PointAffine *_pointsA,
+            typename Engine::G1PointAffine *_pointsB1,
+            typename Engine::G2PointAffine *_pointsB2,
+            typename Engine::G1PointAffine *_final_pointsC,
+            typename Engine::G1PointAffine *_round_pointsC,
+            typename Engine::G1PointAffine *_pointsH
+        ):
+            E(_E),
+            nVars(_nVars),
+            nPublic(_nPublic),
+            domainSize(_domainSize),
+            nCoefs(_nCoefs),
+            alpha1(_alpha1),
+            beta1(_beta1),
+            beta2(_beta2),
+            final_delta1(_final_delta1),
+            final_delta2(_final_delta2),
+            round_delta1(_round_delta1),
+            coefs(_coefs),
+            pointsA(_pointsA),
+            pointsB1(_pointsB1),
+            pointsB2(_pointsB2),
+            final_pointsC(_final_pointsC),
+            round_pointsC(_round_pointsC),
+            pointsH(_pointsH)
+        {
             fft = new FFT<typename Engine::Fr>(domainSize*2);
         }
 
-        ~UltraGirthProver() {
+        ~Prover() {
             delete fft;
         }
 
@@ -119,96 +137,16 @@ namespace UltraGroth {
 
         // Function to execute final round of proving process
         std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
-        execute_final_round(typename Engine::FrElement *wtns, typename Engine::FrElement *final_wtns, typename Engine::Fr::Element round_random_factor);
+        execute_final_round(typename Engine::FrElement *wtns, typename Engine::FrElement *final_wtns, typename Engine::FrElement round_random_factor);
 
         // Function to execute common round of proving process
         // Pointer to accumulator is passed to function; accumulator size is 32
         typename Engine::G1PointAffine execute_round(typename Engine::FrElement *round_wtns, uint64_t wtns_count, uint8_t *accumulator);
     };
 
-    template <typename Engine>
-    class Round {
 
-        Engine &E;
-        uint32_t nVars;
-        uint32_t nPublic;
-        uint32_t domainSize;
-        uint64_t nCoefs;
-        typename Engine::G1PointAffine &vk_alpha1;
-        typename Engine::G1PointAffine &vk_beta1;
-        typename Engine::G2PointAffine &vk_beta2;
-        typename Engine::G1PointAffine &final_delta_g1;
-        typename Engine::G2PointAffine &final_delta_g2;
-        typename Engine::G2PointAffine &round_delta_g1;
-        typename Engine::Fr::Element &round_random_factor;
-        Coef<Engine> *coefs;
-        typename Engine::G1PointAffine *pointsA;
-        typename Engine::G1PointAffine *pointsB1;
-        typename Engine::G2PointAffine *pointsB2;
-        typename Engine::G1PointAffine *pointsC;
-        typename Engine::G1PointAffine *pointsH;
-        typename Engine::FrElement *wtns;
-        uint32_t *wtns_indexes;
-
-        FFT<typename Engine::Fr> *fft;
-    public:
-        Round(
-            Engine &_E, 
-            uint32_t _nVars, 
-            uint32_t _nPublic, 
-            uint32_t _domainSize, 
-            uint64_t _nCoefs, 
-            typename Engine::G1PointAffine &_vk_alpha1,
-            typename Engine::G1PointAffine &_vk_beta1,
-            typename Engine::G2PointAffine &_vk_beta2,
-            typename Engine::G1PointAffine &_final_delta_g1,
-            typename Engine::G2PointAffine &_final_delta_g2,
-            typename Engine::G2PointAffine &_round_delta_g1,
-            typename Engine::Fr::Element &_round_random_factor,
-            Coef<Engine> *_coefs, 
-            typename Engine::G1PointAffine *_pointsA,
-            typename Engine::G1PointAffine *_pointsB1,
-            typename Engine::G2PointAffine *_pointsB2,
-            typename Engine::G1PointAffine *_pointsC,
-            typename Engine::G1PointAffine *_pointsH,
-            typename Engine::FrElement *_wtns,
-            uint32_t *_wtns_indexes
-        ) :
-            E(_E),
-            nVars(_nVars),
-            nPublic(_nPublic),
-            domainSize(_domainSize),
-            nCoefs(_nCoefs),
-            vk_alpha1(_vk_alpha1),
-            vk_beta1(_vk_beta1),
-            vk_beta2(_vk_beta2),
-            final_delta_g1(_final_delta_g1),
-            final_delta_g2(_final_delta_g2),
-            round_delta_g1(_round_delta_g1),
-            round_random_factor(_round_random_factor),
-            coefs(_coefs),
-            pointsA(_pointsA),
-            pointsB1(_pointsB1),
-            pointsB2(_pointsB2),
-            pointsC(_pointsC),
-            pointsH(_pointsH),
-            wtns(_wtns),
-            wtns_indexes(_wtns_indexes)
-        {
-            fft = new FFT<typename Engine::Fr>(domainSize*2);
-        }
-
-        ~Round() {
-            delete fft;
-        }
-
-        std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
-        execute_round();
-
-        std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
-        execute_final_round();
-    };
-
+    // TODO Maybe delete later
+    /*
     template <typename Engine>
     std::unique_ptr<Round<Engine>> prepare_final_round(
         uint32_t nVars, 
@@ -230,6 +168,7 @@ namespace UltraGroth {
         void *pointsC,
         void *pointsH
     );
+    */
 
     template <typename Engine>
     class Verifier {
