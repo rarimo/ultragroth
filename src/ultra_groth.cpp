@@ -31,6 +31,7 @@ Prover<Engine>::execute_round(
     E.g1.mulByScalar(tmp, round_delta1, (uint8_t *)&r, sizeof(r));
     E.g1.add(commitment, commitment, tmp);
     
+    // Load x and y coordinates of commitment to buffer
     unsigned char buffer[32 + 2 * 32];
     memcpy(buffer, accumulator, 32 * sizeof(unsigned char));
     uint64_t points_bytes[8] = {commitment.x.v[0], commitment.x.v[1], commitment.x.v[2], commitment.x.v[3],
@@ -276,6 +277,42 @@ Prover<Engine>::execute_final_round(
 
     return {pi_a, pi_b, pi_c};
 };
+
+template <typename Engine>
+std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement *wtns){
+
+    unsigned char accumulator[32];
+    memset(accumulator, 0, 32 * sizeof(unsigned char));
+    
+    // initialization
+    typename Engine::FrElement round_random_factor;
+    typename Engine::G1PointAffine round_commitment;
+    
+    // here cloning of appropriate part of witness for first round should happen
+    typename Engine::FrElement round_wtns[] = new typename Engine::FrElement[];
+
+    std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement> round_result = execute_round(round_wtns, 0, accumulator);
+    round_random_factor = round_result.first;
+    round_commitment = round_result.second;
+    delete [] round_wtns;
+
+    // here cloning of appropriate part of witness for fimal round should happen
+    typename Engine::FrElement final_round_wtns[] = new typename Engine::FrElement[];
+
+    std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine> final_round_result = execute_final_round(
+        *wtns,
+        *final_round_result,
+        round_random_factor
+    );
+
+    Proof<Engine> *p = new Proof<Engine>(Engine::engine);
+    E.g1.copy(p->A, std::get<0>(final_round_result));
+    E.g2.copy(p->B, std::get<1>(final_round_result));
+    E.g1.copy(p->final_commitment, std::get<2>(final_round_result));
+    E.g1.copy(p->round_commitment, round_commitment);
+
+    return nullptr;
+}
 
 template <typename Engine>
 std::string Proof<Engine>::toJsonStr() {
