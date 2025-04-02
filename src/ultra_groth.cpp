@@ -14,7 +14,7 @@ Prover<Engine>::execute_round(
     typename Engine::FrElement *round_wtns, uint64_t wtns_count, unsigned char *accumulator
 ) {
     LOG_TRACE("Start Multiexp round commitments");
-    uint32_t sW = sizeof(wtns[0]);
+    uint32_t sW = sizeof(round_wtns[0]);
     typename Engine::G1Point commitment;
     E.g1.multiMulByScalarMSM(commitment, round_pointsC, (uint8_t *)round_wtns, sW, wtns_count);
     std::ostringstream ss2;
@@ -32,9 +32,11 @@ Prover<Engine>::execute_round(
     
     unsigned char buffer[32 + 2 * 32];
     memcpy(buffer, accumulator, 32 * sizeof(unsigned char));
-    // need to copy x, y coordinates of commitment to buffer as bytes
+    uint64_t points_bytes[8] = {commitment.x.v[0], commitment.x.v[1], commitment.x.v[2], commitment.x.v[3],
+                                commitment.y.v[0], commitment.y.v[1], commitment.y.v[2], commitment.y.v[3]};
+    memcpy(buffer + 32, points_bytes, 8 * sizeof(uint64_t));
     
-    SHA256(buffer, length, accumulator);
+    //SHA256(buffer, 32*3, accumulator);
     
     return {commitment, r};
     
