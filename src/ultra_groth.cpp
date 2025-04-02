@@ -46,7 +46,7 @@ std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typen
 Prover<Engine>::execute_final_round(
     typename Engine::FrElement *wtns, 
     typename Engine::FrElement *final_wtns,
-    typename Engine::Fr::Element round_random_factor
+    typename Engine::FrElement round_random_factor
 ) {
     ThreadPool &threadPool = ThreadPool::defaultPool();
 
