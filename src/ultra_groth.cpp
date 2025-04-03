@@ -12,7 +12,7 @@ namespace UltraGroth {
 template <typename Engine>
 std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement>
 Prover<Engine>::execute_round(
-    typename Engine::FrElement *round_wtns, uint64_t wtns_count, uint8_t *accumulator
+    const typename Engine::FrElement *round_wtns, const uint64_t wtns_count, uint8_t *accumulator
 ) {
     LOG_TRACE("Start Multiexp round commitments");
     uint32_t sW = sizeof(round_wtns[0]);
@@ -281,12 +281,19 @@ Prover<Engine>::execute_final_round(
 
 
 template <typename Engine>
-std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(){
+std::unique_ptr<Proof<Engine>> Prover<Engine>::prove() {
 
     // 1. Call round function from Rust code
-    // TODO Plug for now
-    void *wtns = nullptr;
+    // Get from rust code uint64_t *wtns, uint32_t *wtns_indexes, uint32_t wtns_count
+    
 
+    // TODO Plug for now
+    uint64_t *wtns = nullptr;
+    uint32_t *wtns_indexes = nullptr;
+    uint32_t wtns_count = 17;
+
+
+    // TODO think about accumulator (not urgent)
     uint8_t accumulator[32];
     memset(accumulator, 0, 32 * sizeof(uint8_t));
     
@@ -295,19 +302,37 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(){
     typename Engine::G1PointAffine round_commitment;
     
     // here cloning of appropriate part of witness for first round should happen
-    typename Engine::FrElement round_wtns[] = new typename Engine::FrElement[];
+    const uint32_t round_wtns_count = wtns_count >> 2;
+    typename Engine::FrElement *round_wtns = new typename Engine::FrElement[round_wtns_count];
 
-    std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement> round_result = execute_round(round_wtns, 0, accumulator);
+    // TODO Copy here
+
+    std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement> round_result = execute_round(round_wtns, round_wtns_count, accumulator);
+    
+    // TODO Call Rust function and maybe pass accumulator, round_random_factor
+    // And get uint32_t *final_wtns_indexes, uint32_t final_wtns_count
+    // We calculate final_wtns
+
+    // TODO plug №2
+    uint32_t *final_wtns_indexes = nullptr;
+    uint32_t final_wtns_count = 7;
+    
     round_random_factor = round_result.first;
     round_commitment = round_result.second;
-    delete [] round_wtns;
+    delete[] round_wtns;
 
+
+
+
+    const uint32_t final_round_wtns_count = final_wtns_count >> 2; 
     // here cloning of appropriate part of witness for fimal round should happen
-    typename Engine::FrElement final_round_wtns[] = new typename Engine::FrElement[];
+    typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_wtns_count];
+
+    // TODO Copy here
 
     std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine> final_round_result = execute_final_round(
-        *wtns,
-        *final_round_result,
+        wtns,
+        final_round_wtns,
         round_random_factor
     );
 
@@ -316,8 +341,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(){
     E.g2.copy(p->B, std::get<1>(final_round_result));
     E.g1.copy(p->final_commitment, std::get<2>(final_round_result));
     E.g1.copy(p->round_commitment, round_commitment);
-
-    return nullptr;
+    return std::unique_ptr<Proof<Engine>>(p);
 }
 
 

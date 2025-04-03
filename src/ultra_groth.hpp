@@ -57,10 +57,10 @@ namespace UltraGroth {
     class Prover{
 
         Engine &E;
-        u_int32_t nVars;
-        u_int32_t nPublic;
-        u_int32_t domainSize;
-        u_int64_t nCoefs;
+        uint32_t nVars;
+        uint32_t nPublic;
+        uint32_t domainSize;
+        uint64_t nCoefs;
         // Toxic waste wrapped into corresponding groups
         typename Engine::G1PointAffine &alpha1;
         typename Engine::G1PointAffine &beta1;
@@ -88,10 +88,10 @@ namespace UltraGroth {
     public:
         Prover(
             Engine &_E,
-            u_int32_t _nVars,
-            u_int32_t _nPublic,
-            u_int32_t _domainSize,
-            u_int64_t _nCoefs,
+            uint32_t _nVars,
+            uint32_t _nPublic,
+            uint32_t _domainSize,
+            uint64_t _nCoefs,
             typename Engine::G1PointAffine &_alpha1,
             typename Engine::G1PointAffine &_beta1,
             typename Engine::G2PointAffine &_beta2,
@@ -138,7 +138,7 @@ namespace UltraGroth {
         // Function to execute common round of proving process
         // Pointer to accumulator is passed to function; accumulator size is 32
         typename std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement>
-        execute_round(typename Engine::FrElement *round_wtns, uint64_t wtns_count, uint8_t *accumulator);
+        execute_round(const typename Engine::FrElement *round_wtns, const uint64_t wtns_count, uint8_t *accumulator);
 
         // Function to execute final round of proving process
         std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
@@ -146,30 +146,6 @@ namespace UltraGroth {
     };
 
 
-    // TODO Maybe delete later
-    /*
-    template <typename Engine>
-    std::unique_ptr<Round<Engine>> prepare_final_round(
-        uint32_t nVars, 
-        uint32_t nPublic, 
-        uint32_t domainSize, 
-        uint64_t nCoefs, 
-        void *vk_alpha1,
-        void *vk_beta1,
-        void *vk_beta2,
-        void *final_delta_g1,
-        void *final_delta_g2,
-        void *round_delta_g1,
-        void *round_random_factor,
-        // array of deltas from and factors r_k (maybe factors k)
-        void *coefs,
-        void *pointsA,
-        void *pointsB1,
-        void *pointsB2,
-        void *pointsC,
-        void *pointsH
-    );
-    */
 
     template <typename Engine>
     class Verifier {
