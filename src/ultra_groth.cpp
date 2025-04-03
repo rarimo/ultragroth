@@ -7,7 +7,55 @@
 #include <tuple>
 #include <openssl/sha.h>
 
+
 namespace UltraGroth {
+
+template <typename Engine>
+std::unique_ptr<Prover<Engine>> makeProver(
+    u_int32_t nVars, 
+    u_int32_t nPublic, 
+    u_int32_t domainSize, 
+    u_int64_t nCoefs, 
+    void *vk_alpha1,
+    void *vk_beta1,
+    void *vk_beta2,
+    void *vk_delta1,
+    void *vk_delta2,
+    void *final_delta1,
+    void *final_delta2,
+    void *round_delta1,
+    void *coefs,
+    void *pointsA,
+    void *pointsB1,
+    void *pointsB2,
+    void *final_pointsC,
+    void *round_pointsC,
+    void *pointsH
+) {
+    Prover<Engine> *p = new Prover<Engine>(
+        Engine::engine, 
+        nVars,
+        nPublic,
+        domainSize,
+        nCoefs,
+        *(typename Engine::G1PointAffine *)vk_alpha1,
+        *(typename Engine::G1PointAffine *)vk_beta1,
+        *(typename Engine::G2PointAffine *)vk_beta2,
+        *(typename Engine::G1PointAffine *)vk_delta1,
+        *(typename Engine::G2PointAffine *)vk_delta2,
+        *(typename Engine::G2PointAffine *)final_delta1,
+        *(typename Engine::G2PointAffine *)final_delta2,
+        *(typename Engine::G2PointAffine *)round_delta1,
+        (Coef<Engine> *)((uint64_t)coefs + 4),
+        (typename Engine::G1PointAffine *)pointsA,
+        (typename Engine::G1PointAffine *)pointsB1,
+        (typename Engine::G2PointAffine *)pointsB2,
+        (typename Engine::G1PointAffine *)final_pointsC,
+        (typename Engine::G2PointAffine *)round_pointsC,
+        (typename Engine::G1PointAffine *)pointsH
+    );
+    return std::unique_ptr< Prover<Engine> >(p);
+}
 
 template <typename Engine>
 std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement>
@@ -41,7 +89,7 @@ Prover<Engine>::execute_round(
     SHA256(buffer, 32*3, accumulator);
     return {commitment, r};
 }
-    
+
 
 template <typename Engine>
 std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
@@ -317,8 +365,8 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove() {
     uint32_t *final_wtns_indexes = nullptr;
     uint32_t final_wtns_count = 7;
     
-    round_random_factor = round_result.first;
-    round_commitment = round_result.second;
+    round_commitment = std::get<0>(round_result);
+    round_random_factor = std::get<1>(round_result);
     delete[] round_wtns;
 
 

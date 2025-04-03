@@ -92,6 +92,8 @@ set(LIB_SOURCES
     fileloader.hpp
     prover.cpp
     prover.h
+    ultra_groth_prover.cpp
+    ultra_groth_prover.h
     verifier.cpp
     verifier.h
     ../depends/ffiasm/c/misc.cpp

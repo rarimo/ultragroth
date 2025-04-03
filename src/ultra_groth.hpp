@@ -145,7 +145,28 @@ namespace UltraGroth {
         execute_final_round(typename Engine::FrElement *wtns, typename Engine::FrElement *final_wtns, typename Engine::FrElement round_random_factor);
     };
 
-
+    template <typename Engine>
+    std::unique_ptr<Prover<Engine>> makeProver(
+        u_int32_t nVars, 
+        u_int32_t nPublic, 
+        u_int32_t domainSize, 
+        u_int64_t nCoefs, 
+        void *vk_alpha1,
+        void *vk_beta1,
+        void *vk_beta2,
+        void *vk_delta1,
+        void *vk_delta2,
+        void *final_delta1,
+        void *final_delta2,
+        void *round_delta1,
+        void *coefs,
+        void *pointsA,
+        void *pointsB1,
+        void *pointsB2,
+        void *final_pointsC,
+        void *round_pointsC,
+        void *pointsH
+    );
 
     template <typename Engine>
     class Verifier {
