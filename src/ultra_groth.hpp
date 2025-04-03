@@ -134,7 +134,7 @@ namespace UltraGroth {
         }
 
         // Function to execute entire proving process
-        std::unique_ptr<Proof<Engine>> prove();
+        std::unique_ptr<Proof<Engine>> prove(uint8_t *accumulator);
 
         // Function to execute common round of proving process
         // Pointer to accumulator is passed to function; accumulator size is 32
@@ -164,6 +164,9 @@ namespace UltraGroth {
             VerificationKey<Engine> &key);
 
     private:
+
+        bool challenge_check(InputsVector &inputs, uint8_t *accumulator, typename Engine::G1PointAffine round_commitment, uint32_t challenge_index);
+
         bool pairingCheck(G1PointArray& g1, G2PointArray& g2);
 
         typename Engine::F12Element miller(typename Engine::G2Point& b, typename Engine::G1Point& a);
