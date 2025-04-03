@@ -278,20 +278,16 @@ Prover<Engine>::execute_final_round(
     return {pi_a, pi_b, pi_c};
 };
 
-
-
 template <typename Engine>
 std::unique_ptr<Proof<Engine>> Prover<Engine>::prove() {
 
     // 1. Call round function from Rust code
     // Get from rust code uint64_t *wtns, uint32_t *wtns_indexes, uint32_t wtns_count
     
-
     // TODO Plug for now
     uint64_t *wtns = nullptr;
     uint32_t *wtns_indexes = nullptr;
     uint32_t wtns_count = 17;
-
 
     // TODO think about accumulator (not urgent)
     uint8_t accumulator[32];
@@ -302,7 +298,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove() {
     typename Engine::G1PointAffine round_commitment;
     
     // here cloning of appropriate part of witness for first round should happen
-    const uint32_t round_wtns_count = wtns_count >> 2;
+    uint32_t round_wtns_count = 0;
     typename Engine::FrElement *round_wtns = new typename Engine::FrElement[round_wtns_count];
 
     // TODO Copy here
@@ -315,17 +311,14 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove() {
 
     // TODO plug №2
     uint32_t *final_wtns_indexes = nullptr;
-    uint32_t final_wtns_count = 7;
+    uint32_t final_wtns_count = 0;
     
     round_random_factor = round_result.first;
     round_commitment = round_result.second;
     delete[] round_wtns;
 
-
-
-
-    const uint32_t final_round_wtns_count = final_wtns_count >> 2; 
     // here cloning of appropriate part of witness for fimal round should happen
+    uint32_t final_round_wtns_count = 0;
     typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_wtns_count];
 
     // TODO Copy here
@@ -335,6 +328,8 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove() {
         final_round_wtns,
         round_random_factor
     );
+
+    delete[] final_round_wtns;
 
     Proof<Engine> *p = new Proof<Engine>(Engine::engine);
     E.g1.copy(p->A, std::get<0>(final_round_result));
@@ -422,10 +417,10 @@ void Proof<Engine>::fromJson(const json& proof)
 template <typename Engine>
 void VerificationKey<Engine>::fromJson(const json& key)
 {
-    G1PointAffineFromJson(E, Alpha, key["vk_alpha_1"]);
-    G2PointAffineFromJson(E, Beta,  key["vk_beta_2"]);
-    G2PointAffineFromJson(E, Gamma, key["vk_gamma_2"]);
-    G2PointAffineFromJson(E, Delta, key["vk_delta_2"]);
+    G1PointAffineFromJson(E, alpha1, key["vk_alpha_1"]);
+    G2PointAffineFromJson(E, beta2,  key["vk_beta_2"]);
+    G2PointAffineFromJson(E, gamma2, key["vk_gamma_2"]);
+    G2PointAffineFromJson(E, final_delta2, key["vk_delta_2"]);
 
     auto j_ic = key["IC"];
 
@@ -481,28 +476,34 @@ bool Verifier<Engine>::verify(Proof<Engine> &proof, InputsVector &inputs,
     E.g1.copy(pA, proof.A);
 
     typename Engine::G1Point negAlpha;
-    E.g1.neg(negAlpha, key.Alpha);
+    E.g1.neg(negAlpha, key.alpha1);
 
     typename Engine::G1Point negvkX;
     E.g1.neg(negvkX, vkX);
 
-    typename Engine::G1Point negC;
-    E.g1.neg(negC, proof.final_commitment);
+    typename Engine::G1Point negFinalCommit;
+    E.g1.neg(negFinalCommit, proof.final_commitment);
+
+    typename Engine::G1Point negRoundCommit;
+    E.g1.neg(negFinalCommit, proof.round_commitment);
 
     typename Engine::G2Point pB;
     E.g2.copy(pB, proof.B);
 
     typename Engine::G2Point pBeta;
-    E.g2.copy(pBeta, key.Beta);
+    E.g2.copy(pBeta, key.beta2);
 
     typename Engine::G2Point pGamma;
-    E.g2.copy(pGamma, key.Gamma);
+    E.g2.copy(pGamma, key.gamma2);
 
-    typename Engine::G2Point pDelta;
-    E.g2.copy(pDelta, key.Delta);
+    typename Engine::G2Point pFinalDelta;
+    E.g2.copy(pFinalDelta, key.final_delta2);
 
-    G1PointArray g1 = {pA, negAlpha, negvkX, negC};
-    G2PointArray g2 = {pB, pBeta, pGamma, pDelta};
+    typename Engine::G2Point pRoundDelta;
+    E.g2.copy(pFinalDelta, key.round_delta2);
+
+    G1PointArray g1 = {pA, negAlpha, negvkX, negFinalCommit, negRoundCommit};
+    G2PointArray g2 = {pB, pBeta, pGamma, pFinalDelta, pRoundDelta};
 
     return pairingCheck(g1, g2);
 }

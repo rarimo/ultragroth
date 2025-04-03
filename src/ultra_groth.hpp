@@ -32,10 +32,11 @@ namespace UltraGroth {
     class VerificationKey {
         Engine &E;
     public:
-        typename Engine::G1PointAffine Alpha;
-        typename Engine::G2PointAffine Beta;
-        typename Engine::G2PointAffine Gamma;
-        typename Engine::G2PointAffine Delta;
+        typename Engine::G1PointAffine alpha1;
+        typename Engine::G2PointAffine beta2;
+        typename Engine::G2PointAffine gamma2;
+        typename Engine::G2PointAffine final_delta2;
+        typename Engine::G2PointAffine round_delta2;
         std::vector<typename Engine::G1PointAffine> IC;
 
         VerificationKey(Engine &_E) : E(_E) { }
@@ -57,10 +58,10 @@ namespace UltraGroth {
     class Prover{
 
         Engine &E;
-        uint32_t nVars;
-        uint32_t nPublic;
-        uint32_t domainSize;
-        uint64_t nCoefs;
+        u_int32_t nVars;
+        u_int32_t nPublic;
+        u_int32_t domainSize;
+        u_int64_t nCoefs;
         // Toxic waste wrapped into corresponding groups
         typename Engine::G1PointAffine &alpha1;
         typename Engine::G1PointAffine &beta1;
@@ -88,10 +89,10 @@ namespace UltraGroth {
     public:
         Prover(
             Engine &_E,
-            uint32_t _nVars,
-            uint32_t _nPublic,
-            uint32_t _domainSize,
-            uint64_t _nCoefs,
+            u_int32_t _nVars,
+            u_int32_t _nPublic,
+            u_int32_t _domainSize,
+            u_int64_t _nCoefs,
             typename Engine::G1PointAffine &_alpha1,
             typename Engine::G1PointAffine &_beta1,
             typename Engine::G2PointAffine &_beta2,
@@ -138,14 +139,12 @@ namespace UltraGroth {
         // Function to execute common round of proving process
         // Pointer to accumulator is passed to function; accumulator size is 32
         typename std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement>
-        execute_round(const typename Engine::FrElement *round_wtns, const uint64_t wtns_count, uint8_t *accumulator);
+        execute_round(const typename Engine::FrElement *round_wtns, const uint64_t wtns_count, unsigned char *accumulator);
 
         // Function to execute final round of proving process
         std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
         execute_final_round(typename Engine::FrElement *wtns, typename Engine::FrElement *final_wtns, typename Engine::FrElement round_random_factor);
     };
-
-
 
     template <typename Engine>
     class Verifier {
