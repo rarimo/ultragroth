@@ -133,15 +133,16 @@ namespace UltraGroth {
         }
 
         // Function to execute entire proving process
-        std::unique_ptr<Proof<Engine>> prove(typename Engine::FrElement *wtns);
+        std::unique_ptr<Proof<Engine>> prove();
+
+        // Function to execute common round of proving process
+        // Pointer to accumulator is passed to function; accumulator size is 32
+        typename std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement>
+        execute_round(typename Engine::FrElement *round_wtns, uint64_t wtns_count, unsigned char *accumulator);
 
         // Function to execute final round of proving process
         std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
         execute_final_round(typename Engine::FrElement *wtns, typename Engine::FrElement *final_wtns, typename Engine::FrElement round_random_factor);
-
-        // Function to execute common round of proving process
-        // Pointer to accumulator is passed to function; accumulator size is 32
-        typename std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement> execute_round(typename Engine::FrElement *round_wtns, uint64_t wtns_count, unsigned char *accumulator);
     };
 
 

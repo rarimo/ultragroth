@@ -12,7 +12,7 @@ namespace UltraGroth {
 template <typename Engine>
 std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement>
 Prover<Engine>::execute_round(
-    typename Engine::FrElement *round_wtns, uint64_t wtns_count, unsigned char *accumulator
+    typename Engine::FrElement *round_wtns, uint64_t wtns_count, uint8_t *accumulator
 ) {
     LOG_TRACE("Start Multiexp round commitments");
     uint32_t sW = sizeof(round_wtns[0]);
@@ -32,8 +32,8 @@ Prover<Engine>::execute_round(
     E.g1.add(commitment, commitment, tmp);
     
     // Load x and y coordinates of commitment to buffer
-    unsigned char buffer[32 + 2 * 32];
-    memcpy(buffer, accumulator, 32 * sizeof(unsigned char));
+    uint8_t buffer[32 + 2 * 32];
+    memcpy(buffer, accumulator, 32 * sizeof(uint8_t));
     uint64_t points_bytes[8] = {commitment.x.v[0], commitment.x.v[1], commitment.x.v[2], commitment.x.v[3],
                                 commitment.y.v[0], commitment.y.v[1], commitment.y.v[2], commitment.y.v[3]};
     memcpy(buffer + 32, points_bytes, 8 * sizeof(uint64_t));
@@ -278,11 +278,17 @@ Prover<Engine>::execute_final_round(
     return {pi_a, pi_b, pi_c};
 };
 
-template <typename Engine>
-std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement *wtns){
 
-    unsigned char accumulator[32];
-    memset(accumulator, 0, 32 * sizeof(unsigned char));
+
+template <typename Engine>
+std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(){
+
+    // 1. Call round function from Rust code
+    // TODO Plug for now
+    void *wtns = nullptr;
+
+    uint8_t accumulator[32];
+    memset(accumulator, 0, 32 * sizeof(uint8_t));
     
     // initialization
     typename Engine::FrElement round_random_factor;
@@ -313,6 +319,8 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
 
     return nullptr;
 }
+
+
 
 template <typename Engine>
 std::string Proof<Engine>::toJsonStr() {
