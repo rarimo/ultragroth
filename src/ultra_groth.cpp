@@ -334,6 +334,11 @@ Prover<Engine>::execute_final_round(
     return {A, B, C};
 };
 
+static uint64_t *
+get_wtns() {
+    return nullptr;
+}
+
 template <typename Engine>
 std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
 
@@ -341,7 +346,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     // Get from rust code uint64_t *wtns, uint32_t *wtns_indexes, uint32_t wtns_count
     
     // TODO Plug for now
-    uint64_t *wtns = nullptr;
+    uint64_t *wtns = get_wtns();
     uint32_t *wtns_indexes = nullptr;
     uint32_t wtns_count = 17;
     // index in public input corresponding to derived challenge
@@ -358,11 +363,6 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     // buffer to hash challenge index + accumulator
     uint8_t buffer[4 + 32];
     uint8_t challange[32];
-    buffer[0] = challenge_index & 0xFF;
-    buffer[1] = (challenge_index >> 8) & 0xFF;
-    buffer[2] = (challenge_index >> 16) & 0xFF;
-    buffer[3] = (challenge_index >> 24) & 0xFF;
-    
     memcpy(buffer, &challenge_index, sizeof(uint32_t));
     memcpy(buffer + 4, accumulator, 32 * sizeof(uint8_t));
     SHA256(buffer, 4 + 32, challange);
