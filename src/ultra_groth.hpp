@@ -139,7 +139,7 @@ namespace UltraGroth {
         // Function to execute common round of proving process
         // Pointer to accumulator is passed to function; accumulator size is 32
         typename std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement>
-        execute_round(const typename Engine::FrElement *round_wtns, const uint64_t wtns_count, unsigned char *accumulator);
+        execute_round(const typename Engine::FrElement *round_wtns, const uint64_t wtns_count, uint8_t *accumulator);
 
         // Function to execute final round of proving process
         std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
@@ -150,7 +150,7 @@ namespace UltraGroth {
     std::unique_ptr<Prover<Engine>> makeProver(
         u_int32_t nVars, 
         u_int32_t nPublic, 
-        u_int32_t domainSize, 
+        u_int32_t domainSize,
         u_int64_t nCoefs, 
         void *vk_alpha1,
         void *vk_beta1,

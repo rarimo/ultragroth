@@ -12,15 +12,13 @@ namespace UltraGroth {
 
 template <typename Engine>
 std::unique_ptr<Prover<Engine>> makeProver(
-    u_int32_t nVars, 
-    u_int32_t nPublic, 
-    u_int32_t domainSize, 
+    u_int32_t nVars,
+    u_int32_t nPublic,
+    u_int32_t domainSize,
     u_int64_t nCoefs, 
     void *vk_alpha1,
     void *vk_beta1,
     void *vk_beta2,
-    void *vk_delta1,
-    void *vk_delta2,
     void *final_delta1,
     void *final_delta2,
     void *round_delta1,
@@ -33,7 +31,7 @@ std::unique_ptr<Prover<Engine>> makeProver(
     void *pointsH
 ) {
     Prover<Engine> *p = new Prover<Engine>(
-        Engine::engine, 
+        Engine::engine,
         nVars,
         nPublic,
         domainSize,
@@ -41,17 +39,15 @@ std::unique_ptr<Prover<Engine>> makeProver(
         *(typename Engine::G1PointAffine *)vk_alpha1,
         *(typename Engine::G1PointAffine *)vk_beta1,
         *(typename Engine::G2PointAffine *)vk_beta2,
-        *(typename Engine::G1PointAffine *)vk_delta1,
-        *(typename Engine::G2PointAffine *)vk_delta2,
-        *(typename Engine::G2PointAffine *)final_delta1,
+        *(typename Engine::G1PointAffine *)final_delta1,
         *(typename Engine::G2PointAffine *)final_delta2,
-        *(typename Engine::G2PointAffine *)round_delta1,
+        *(typename Engine::G1PointAffine *)round_delta1,
         (Coef<Engine> *)((uint64_t)coefs + 4),
         (typename Engine::G1PointAffine *)pointsA,
         (typename Engine::G1PointAffine *)pointsB1,
         (typename Engine::G2PointAffine *)pointsB2,
         (typename Engine::G1PointAffine *)final_pointsC,
-        (typename Engine::G2PointAffine *)round_pointsC,
+        (typename Engine::G1PointAffine *)round_pointsC,
         (typename Engine::G1PointAffine *)pointsH
     );
     return std::unique_ptr< Prover<Engine> >(p);
@@ -350,7 +346,12 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     // buffer to hash challenge index + accumulator
     uint8_t buffer[4 + 32];
     uint8_t challange[32];
-    memcpy(buffer, challenge_index, sizeof(uint32_t));
+    buffer[0] = challenge_index & 0xFF;
+    buffer[1] = (challenge_index >> 8) & 0xFF;
+    buffer[2] = (challenge_index >> 16) & 0xFF;
+    buffer[3] = (challenge_index >> 24) & 0xFF;
+    
+    memcpy(buffer, &challenge_index, sizeof(uint32_t));
     memcpy(buffer + 4, accumulator, 32 * sizeof(uint8_t));
     SHA256(buffer, 4 + 32, challange);
     // TODO Copy here
@@ -375,8 +376,9 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
 
     // TODO Copy here
 
+    // Pass converted start wtns
     std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine> final_round_result = execute_final_round(
-        wtns,
+        nullptr,
         final_round_wtns,
         round_random_factor
     );

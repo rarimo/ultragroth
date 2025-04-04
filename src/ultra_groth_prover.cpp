@@ -65,16 +65,15 @@ struct UltraGrothProver {
             zkeyHeader->vk_alpha1,
             zkeyHeader->vk_beta1,
             zkeyHeader->vk_beta2,
-            zkeyHeader->vk_delta1,
-            zkeyHeader->vk_delta2,
-            nullptr,                   // final delta 1
-            nullptr,                   // final delta 2
+            (void*)nullptr,            // final delta 1
+            (void*)nullptr,            // final delta 2
+            (void*)nullptr,            // round delta 1
             zkey.getSectionData(4),    // Coefs
             zkey.getSectionData(5),    // pointsA
             zkey.getSectionData(6),    // pointsB1
             zkey.getSectionData(7),    // pointsB2
             zkey.getSectionData(8),    // final points C
-            nullptr,                   // round points C
+            (void*)nullptr,            // round points C
             zkey.getSectionData(9)     // pointsH1
         );
     }
@@ -176,7 +175,10 @@ ultra_groth_prover_prove(
         UltraGrothProver *prover = static_cast<UltraGrothProver*>(prover_object);
         std::string stringProof, stringPublic;
 
-        auto proof = prover->prover->prove();
+        // TODO Create accumulatro
+        uint8_t *accumulator = nullptr;
+
+        auto proof = prover->prover->prove(accumulator);
         stringProof = proof->toJson().dump();
 
         // TODO Get wtns somehow
