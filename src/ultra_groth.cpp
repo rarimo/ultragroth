@@ -60,10 +60,10 @@ Prover<Engine>::execute_round(
 ) {
     LOG_TRACE("Start Multiexp round commitments");
     uint32_t sW = sizeof(round_wtns[0]);
-    typename Engine::G1Point commitment;
-    E.g1.multiMulByScalarMSM(commitment, round_pointsC, (uint8_t *)round_wtns, sW, wtns_count);
+    typename Engine::G1Point commitment_projective;
+    E.g1.multiMulByScalarMSM(commitment_projective, round_pointsC, (uint8_t *)round_wtns, sW, wtns_count);
     std::ostringstream ss2;
-    ss2 << "commitment: " << E.g1.toString(commitment);
+    ss2 << "commitment: " << E.g1.toString(commitment_projective);
     LOG_DEBUG(ss2);
     
     typename Engine::FrElement r;
@@ -73,13 +73,17 @@ Prover<Engine>::execute_round(
     
     // Add blinding factor r_k
     E.g1.mulByScalar(tmp, round_delta1, (uint8_t *)&r, sizeof(r));
-    E.g1.add(commitment, commitment, tmp);
+    E.g1.add(commitment_projective, commitment_projective, tmp);
+
+    // Convert commitment back to affine
+    typename Engine::G1PointAffine commitment;
+    E.g1.copy(commitment, commitment_projective);
     
     // Load x and y coordinates of commitment to buffer
     uint8_t buffer[32 + 2 * 32];
     memcpy(buffer, accumulator, 32 * sizeof(uint8_t));
-    uint64_t points_bytes[8] = {commitment.x.v[0], commitment.x.v[1], commitment.x.v[2], commitment.x.v[3],
-                                commitment.y.v[0], commitment.y.v[1], commitment.y.v[2], commitment.y.v[3]};
+    uint64_t points_bytes[8] = {commitment_projective.x.v[0], commitment_projective.x.v[1], commitment_projective.x.v[2], commitment_projective.x.v[3],
+                                commitment_projective.y.v[0], commitment_projective.y.v[1], commitment_projective.y.v[2], commitment_projective.y.v[3]};
     memcpy(buffer + 32, points_bytes, 8 * sizeof(uint64_t));
     
     SHA256(buffer, 32*3, accumulator);
@@ -319,7 +323,15 @@ Prover<Engine>::execute_final_round(
     E.g1.mulByScalar(p1, round_delta1, (uint8_t *)&round_random_factor, sizeof(round_random_factor));
     E.g1.sub(pi_c, pi_c, p1);
 
-    return {pi_a, pi_b, pi_c};
+    // Convert to affine
+    typename Engine::G1PointAffine A;    
+    typename Engine::G2PointAffine B;    
+    typename Engine::G1PointAffine C;    
+    E.g1.copy(A, pi_a);
+    E.g2.copy(B, pi_b);
+    E.g1.copy(C, pi_c);
+
+    return {A, B, C};
 };
 
 template <typename Engine>
