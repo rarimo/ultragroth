@@ -338,6 +338,11 @@ Prover<Engine>::execute_final_round(
     return {A, B, C};
 };
 
+static uint64_t *
+get_wtns() {
+    return nullptr;
+}
+
 template <typename Engine>
 std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
 
@@ -345,7 +350,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     // Get from rust code uint64_t *wtns, uint32_t *wtns_indexes, uint32_t wtns_count
     
     // TODO Plug for now
-    uint64_t *wtns = nullptr;
+    uint64_t *wtns = get_wtns();
     uint32_t *wtns_indexes = nullptr;
     uint32_t wtns_count = 17;
     // index in public input corresponding to derived challenge
