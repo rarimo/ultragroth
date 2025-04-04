@@ -15,15 +15,15 @@ std::unique_ptr<Prover<Engine>> makeProver(
     u_int32_t nVars,
     u_int32_t nPublic,
     u_int32_t domainSize,
-    u_int64_t nCoefs, 
+    u_int64_t nCoefs,
+    uint32_t *round_indexes,
+    uint32_t *final_round_indexes,
     void *vk_alpha1,
     void *vk_beta1,
     void *vk_beta2,
     void *final_delta1,
     void *final_delta2,
     void *round_delta1,
-    void *round_indexes,
-    void *final_round_indexes,
     void *coefs,
     void *pointsA,
     void *pointsB1,
@@ -38,8 +38,8 @@ std::unique_ptr<Prover<Engine>> makeProver(
         nPublic,
         domainSize,
         nCoefs,
-        *round_indexes,
-        *final_round_indexes,
+        round_indexes,
+        final_round_indexes,
         *(typename Engine::G1PointAffine *)vk_alpha1,
         *(typename Engine::G1PointAffine *)vk_beta1,
         *(typename Engine::G2PointAffine *)vk_beta2,
@@ -342,6 +342,8 @@ static uint64_t *
 get_wtns() {
     return nullptr;
 }
+
+round_indexes[i] == *(round_indexes + i)
 
 template <typename Engine>
 std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {

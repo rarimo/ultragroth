@@ -62,6 +62,8 @@ struct UltraGrothProver {
             zkeyHeader->nPublic,
             zkeyHeader->domainSize,
             zkeyHeader->nCoefs,
+            (uint32_t*)nullptr,            // round indexes
+            (uint32_t*)nullptr,            // final round indexes
             zkeyHeader->vk_alpha1,
             zkeyHeader->vk_beta1,
             zkeyHeader->vk_beta2,
