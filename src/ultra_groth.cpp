@@ -22,6 +22,8 @@ std::unique_ptr<Prover<Engine>> makeProver(
     void *final_delta1,
     void *final_delta2,
     void *round_delta1,
+    void *round_indexes,
+    void *final_round_indexes,
     void *coefs,
     void *pointsA,
     void *pointsB1,
@@ -36,6 +38,8 @@ std::unique_ptr<Prover<Engine>> makeProver(
         nPublic,
         domainSize,
         nCoefs,
+        *round_indexes,
+        *final_round_indexes,
         *(typename Engine::G1PointAffine *)vk_alpha1,
         *(typename Engine::G1PointAffine *)vk_beta1,
         *(typename Engine::G2PointAffine *)vk_beta2,
@@ -355,13 +359,19 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     uint32_t round_wtns_count = 0;
     typename Engine::FrElement *round_wtns = new typename Engine::FrElement[round_wtns_count];
 
+    // Convert witness from uint64 to FrElement
+    //for (uint32_t i = 0; i < round_wtns_count; i += 4){
+    //    typename Engine::FrElement tmp;
+    //    tmp.v[0] = round_wtns[i];
+    //    tmp.v[1] = round_wtns[i + 1];
+    //    tmp.v[2] = round_wtns[i + 2];
+    //    tmp.v[3] = round_wtns[i + 3];
+    //    round_wtns
+    //}
+
     // buffer to hash challenge index + accumulator
     uint8_t buffer[4 + 32];
     uint8_t challange[32];
-    buffer[0] = challenge_index & 0xFF;
-    buffer[1] = (challenge_index >> 8) & 0xFF;
-    buffer[2] = (challenge_index >> 16) & 0xFF;
-    buffer[3] = (challenge_index >> 24) & 0xFF;
     
     memcpy(buffer, &challenge_index, sizeof(uint32_t));
     memcpy(buffer + 4, accumulator, 32 * sizeof(uint8_t));
