@@ -1,5 +1,6 @@
 #include <gmp.h>
 #include <string>
+#include <fstream>
 #include <cstring>
 #include <stdexcept>
 #include <alt_bn128.hpp>
@@ -132,13 +133,19 @@ struct UltraGrothProver {
         // PointsH(10)
         // Contributions(11)
 
+        std::tuple<std::vector<uint32_t>, std::vector<uint32_t>> indexes = ZKeyUtils::load_indexes("data.json");
+
+        std::cout << "Make prover call" << std::endl;
+
         prover = UltraGroth::makeProver<AltBn128::Engine>(
             zkeyHeader->nVars,
             zkeyHeader->nPublic,
             zkeyHeader->domainSize,
             zkeyHeader->nCoefs,
-            (uint32_t*)nullptr,        // round indexes
-            (uint32_t*)nullptr,        // final round indexes
+            std::get<0>(indexes).data(), // round indexes
+            std::get<0>(indexes).size(), // round indexes
+            std::get<1>(indexes).data(), // final round indexes
+            std::get<1>(indexes).size(), // final round indexes
             zkeyHeader->alpha1,
             zkeyHeader->beta1,
             zkeyHeader->beta2,
@@ -254,10 +261,21 @@ ultra_groth_prover_prove(
         std::string stringProof, stringPublic;
 
         // TODO Create accumulatro
-        uint8_t *accumulator = nullptr;
+        uint8_t accumulator[32];
+        std::memset(accumulator, 0, 32 * sizeof(uint8_t));
+
+        std::cout << "Run prover" << std::endl;
 
         auto proof = prover->prover->prove(accumulator);
-        stringProof = proof->toJson().dump();
+        auto jsonProof = proof->toJson();
+        std::ofstream file("proof.json");
+
+        if (file.is_open()) {
+            file << jsonProof.dump();
+            file.close();
+        } else {
+            std::cerr << "Failed to open file for writing.\n";
+        }
 
         // TODO Get wtns somehow
         //stringPublic = BuildPublicString(wtnsData, prover->zkeyHeader->nPublic);

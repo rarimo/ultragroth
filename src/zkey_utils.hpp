@@ -36,6 +36,7 @@ namespace ZKeyUtils {
     };
 
     std::unique_ptr<Header> loadHeader(BinFileUtils::BinFile *f);
+    std::tuple<std::vector<uint32_t>, std::vector<uint32_t>> load_indexes(std::string path);
 }
 
 #endif // ZKEY_UTILS_H

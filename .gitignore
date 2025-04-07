@@ -1,5 +1,9 @@
 sketches.cpp
 .vscode/
+bionetta-prover/
+
+*.zkey
+*.json
 
 # Logs
 logs

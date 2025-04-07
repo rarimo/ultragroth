@@ -10,6 +10,9 @@ project(rapidsnark LANGUAGES CXX C ASM)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/bionetta-prover/src/target/release/libwitness_generator.a) # Use .a for static library
+include_directories(${CMAKE_SOURCE_DIR}/bionetta-prover/include)
+
 message("BITS_PER_CHUNK=" ${BITS_PER_CHUNK})
 message("USE_ASM=" ${USE_ASM})
 message("USE_OPENMP=" ${USE_OPENMP})
@@ -31,7 +34,6 @@ endif()
 
 include_directories(BEFORE ${GMP_INCLUDE_DIR})
 
-
 if(USE_OPENMP)
     find_package(OpenMP)
 
@@ -52,7 +54,6 @@ endif()
 
 
 add_subdirectory(src)
-
 
 install(TARGETS rapidsnark rapidsnarkStatic rapidsnarkStaticFrFq fr fq # prover, verifier, test_prover were here
     RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin

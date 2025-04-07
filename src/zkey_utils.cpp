@@ -1,6 +1,13 @@
 #include <stdexcept>
 
 #include "zkey_utils.hpp"
+#include <tuple>
+#include <nlohmann/json.hpp>
+#include <vector>
+#include <fstream>
+#include <string>
+
+using json = nlohmann::json;
 
 namespace ZKeyUtils {
 
@@ -15,6 +22,21 @@ Header::~Header() {
     mpz_clear(rPrime);
 }
 
+std::tuple<std::vector<uint32_t>, std::vector<uint32_t>> load_indexes(std::string path) {
+
+    std::ifstream file("data.json");
+    if (!file.is_open()) {
+        throw std::invalid_argument( "Failed to open JSON" );
+    }
+
+    json data;
+    file >> data;
+
+    std::vector<uint32_t> c1 = data["c1"].get<std::vector<uint32_t>>();
+    std::vector<uint32_t> c2 = data["c2"].get<std::vector<uint32_t>>();
+
+    return {c1, c2};
+}
 
 std::unique_ptr<Header> loadHeader(BinFileUtils::BinFile *f) {
 

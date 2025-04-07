@@ -69,8 +69,10 @@ namespace UltraGroth {
         u_int64_t nCoefs;
         // Indexes to extract witness elements for first round
         uint32_t *round_indexes;
+        uint32_t round_indexes_count;
         // Indexes to extract witness elements for final round
         uint32_t *final_round_indexes;
+        uint32_t final_round_indexes_count;
         // Toxic waste wrapped into corresponding groups
         typename Engine::G1PointAffine &alpha1;
         typename Engine::G1PointAffine &beta1;
@@ -102,7 +104,9 @@ namespace UltraGroth {
             u_int32_t _domainSize,
             u_int64_t _nCoefs,
             uint32_t *_round_indexes,
+            uint32_t _round_indexes_count,
             uint32_t *_final_round_indexes,
+            uint32_t _final_round_indexes_count,
             typename Engine::G1PointAffine &_alpha1,
             typename Engine::G1PointAffine &_beta1,
             typename Engine::G2PointAffine &_beta2,
@@ -123,7 +127,9 @@ namespace UltraGroth {
             domainSize(_domainSize),
             nCoefs(_nCoefs),
             round_indexes(_round_indexes),
+            round_indexes_count(_round_indexes_count),
             final_round_indexes(_final_round_indexes),
+            final_round_indexes_count(_final_round_indexes_count),
             alpha1(_alpha1),
             beta1(_beta1),
             beta2(_beta2),
@@ -165,7 +171,9 @@ namespace UltraGroth {
         u_int32_t domainSize,
         u_int64_t nCoefs,
         uint32_t *round_indexes,
+        uint32_t round_indexes_count,
         uint32_t *final_round_indexes,
+        uint32_t final_round_indexes_count,
         void *vk_alpha1,
         void *vk_beta1,
         void *vk_beta2,

@@ -17,7 +17,9 @@ std::unique_ptr<Prover<Engine>> makeProver(
     u_int32_t domainSize,
     u_int64_t nCoefs,
     uint32_t *round_indexes,
+    uint32_t round_indexes_count,
     uint32_t *final_round_indexes,
+    uint32_t final_round_indexes_count,
     void *vk_alpha1,
     void *vk_beta1,
     void *vk_beta2,
@@ -39,7 +41,9 @@ std::unique_ptr<Prover<Engine>> makeProver(
         domainSize,
         nCoefs,
         round_indexes,
+        round_indexes_count,
         final_round_indexes,
+        final_round_indexes_count,
         *(typename Engine::G1PointAffine *)vk_alpha1,
         *(typename Engine::G1PointAffine *)vk_beta1,
         *(typename Engine::G2PointAffine *)vk_beta2,
@@ -129,9 +133,9 @@ Prover<Engine>::execute_final_round(
     // There defenitely will be bug here with indices; fix later 
     LOG_TRACE("Start Multiexp C");
     typename Engine::G1Point pi_c;
-    E.g1.multiMulByScalarMSM(pi_c, final_pointsC, (uint8_t *)((uint64_t)wtns + (nPublic +1)*sW) /* here should be final wtns 
+    E.g1.multiMulByScalarMSM(pi_c, final_pointsC, (uint8_t *)final_wtns /* here should be final wtns 
                                                                                                 elements; change later*/, 
-                            sW, nVars-nPublic-1 /*here should be final wtns count*/);
+                            sW, final_round_indexes_count /*here should be final wtns count*/);
     std::ostringstream ss5;
     ss5 << "pi_c: " << E.g1.toString(pi_c);
     LOG_DEBUG(ss5);
@@ -345,9 +349,32 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     // Get from rust code uint64_t *wtns, uint32_t *wtns_indexes, uint32_t wtns_count
     
     // TODO Plug for now
-    uint64_t *wtns = nullptr;
-    uint32_t *wtns_indexes = nullptr;
-    uint32_t wtns_count = 17;
+    uint64_t *wtns_digits = new uint64_t[4 * 69761];
+    uint32_t wtns_count = 4*69761;
+    std::memset(wtns_digits, 0, wtns_count * sizeof(uint64_t));
+    std::cout << "Digits initialization" << std::endl;
+    for (uint64_t i = 0; i < wtns_count; i += 4){
+        wtns_digits[i] = i;
+        wtns_digits[i + 1] = 0;
+        wtns_digits[i + 2] = 0;
+        wtns_digits[i + 3] = 0;
+    }
+
+    // Load digits into FrElement type
+    typename Engine::FrElement *wtns = new typename Engine::FrElement[wtns_count >> 2];
+
+    std::cout << "Wtns cast started" << std::endl;
+
+    for (uint32_t i = 0; i < wtns_count >> 2; i += 4){
+        typename Engine::FrElement tmp;
+        tmp.v[0] = wtns_digits[i];
+        tmp.v[1] = wtns_digits[i + 1];
+        tmp.v[2] = wtns_digits[i + 2];
+        tmp.v[3] = wtns_digits[i + 3];
+        wtns[i] = tmp;
+    }
+
+    std::cout << "Wtns casted" << std::endl;
     // index in public input corresponding to derived challenge
     uint32_t challenge_index = 0;
     
@@ -356,21 +383,17 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     typename Engine::G1PointAffine round_commitment;
     
     // here cloning of appropriate part of witness for first round should happen
-    uint32_t round_wtns_count = 0;
-    typename Engine::FrElement *round_wtns = new typename Engine::FrElement[round_wtns_count];
+    typename Engine::FrElement *round_wtns = new typename Engine::FrElement[round_indexes_count];
 
     // Convert witness from uint64 to FrElement
-    for (uint32_t i = 0; i < round_wtns_count; i++){
-        typename Engine::FrElement tmp;
+    for (uint32_t i = 0; i < round_indexes_count; i++){
         uint32_t index = round_indexes[i];
-        tmp.v[0] = wtns[index];
-        tmp.v[1] = wtns[index + 1];
-        tmp.v[2] = wtns[index + 2];
-        tmp.v[3] = wtns[index + 3];
-        round_wtns[i] = tmp;
+        round_wtns[i] = wtns[index];
     }
 
-    std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement> round_result = execute_round(round_wtns, round_wtns_count, accumulator);
+    std::cout << "Executre first round" << std::endl;
+    std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement> round_result = execute_round(round_wtns, round_indexes_count, accumulator);
+    std::cout << "First round done" << std::endl;
 
     // buffer to hash challenge index + accumulator
     uint8_t buffer[4 + 32];
@@ -389,26 +412,23 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     delete[] round_wtns;
 
     // here cloning of appropriate part of witness for fimal round should happen
-    uint32_t final_round_wtns_count = 0;
-    typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_wtns_count];
+    typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_indexes_count];
 
     // Convert witness from uint64 to FrElement
-    for (uint32_t i = 0; i < final_round_wtns_count; i++){
+    for (uint32_t i = 0; i < final_round_indexes_count; i++){
         typename Engine::FrElement tmp;
         uint32_t index = final_round_indexes[i];
-        tmp.v[0] = wtns[index];
-        tmp.v[1] = wtns[index + 1];
-        tmp.v[2] = wtns[index + 2];
-        tmp.v[3] = wtns[index + 3];
-        final_round_wtns[i] = tmp;
+        final_round_wtns[i] = wtns[index];
     }
 
+    std::cout << "Execute final round" << std::endl;
     // Pass converted start wtns
     std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine> final_round_result = execute_final_round(
-        nullptr,
+        wtns,
         final_round_wtns,
         round_random_factor
     );
+    std::cout << "Final round done" << std::endl;
 
     delete[] final_round_wtns;
 
@@ -430,7 +450,7 @@ std::string Proof<Engine>::toJsonStr() {
     ss << "{ \"pi_a\":[\"" << E.f1.toString(A.x) << "\",\"" << E.f1.toString(A.y) << "\",\"1\"], ";
     ss << " \"pi_b\": [[\"" << E.f1.toString(B.x.a) << "\",\"" << E.f1.toString(B.x.b) << "\"],[\"" << E.f1.toString(B.y.a) << "\",\"" << E.f1.toString(B.y.b) << "\"], [\"1\",\"0\"]], ";
     ss << " \"pi_c\": [\"" << E.f1.toString(final_commitment.x) << "\",\"" << E.f1.toString(final_commitment.y) << "\",\"1\"], ";
-    ss << " \"protocol\":\"groth16\" }";
+    ss << " \"protocol\":\"ligma\" }";
         
     return ss.str();
 }
@@ -460,12 +480,17 @@ json Proof<Engine>::toJson() {
     p["pi_b"].push_back(y2);
     p["pi_b"].push_back(z2);
 
-    p["pi_c"] = {};
-    p["pi_c"].push_back(E.f1.toString(final_commitment.x) );
-    p["pi_c"].push_back(E.f1.toString(final_commitment.y) );
-    p["pi_c"].push_back("1" );
+    p["pi_f"] = {};
+    p["pi_f"].push_back(E.f1.toString(final_commitment.x) );
+    p["pi_f"].push_back(E.f1.toString(final_commitment.y) );
+    p["pi_f"].push_back("1" );
 
-    p["protocol"] = "groth16";
+    p["pi_r"] = {};
+    p["pi_r"].push_back(E.f1.toString(round_commitment.x) );
+    p["pi_r"].push_back(E.f1.toString(round_commitment.y) );
+    p["pi_r"].push_back("1" );
+
+    p["protocol"] = "ligma";
             
     return p;
 }
@@ -493,7 +518,8 @@ void Proof<Engine>::fromJson(const json& proof)
 {
     G1PointAffineFromJson(E, A, proof["pi_a"]);
     G2PointAffineFromJson(E, B, proof["pi_b"]);
-    G1PointAffineFromJson(E, final_commitment, proof["pi_c"]);
+    G1PointAffineFromJson(E, final_commitment, proof["pi_f"]);
+    G1PointAffineFromJson(E, round_commitment, proof["pi_r"]);
 }
 
 template <typename Engine>
