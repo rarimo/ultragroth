@@ -22,12 +22,14 @@ namespace ZKeyUtils {
         u_int32_t domainSize;
         u_int64_t nCoefs;
 
-        void *vk_alpha1;
-        void *vk_beta1;
-        void *vk_beta2;
-        void *vk_gamma2;
-        void *vk_delta1;
-        void *vk_delta2;
+        void *alpha1;
+        void *beta1;
+        void *beta2;
+        void *gamma2;
+        void *round_delta1;
+        void *round_delta2;
+        void *final_delta1;
+        void *final_delta2;
 
         Header();
         ~Header();

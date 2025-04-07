@@ -5,6 +5,15 @@
 extern "C" {
 #endif
 
+int
+ultragroth_public_size_for_zkey_buf(
+    const void          *zkey_buffer,
+    unsigned long long   zkey_size,
+    unsigned long long  *public_size,
+    char                *error_msg,
+    unsigned long long   error_msg_maxsize);
+
+
 /**
  * Initializes 'prover_object' with a pointer to a new prover object.
  * @return error code:

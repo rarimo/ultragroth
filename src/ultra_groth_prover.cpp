@@ -12,7 +12,7 @@
 #include "fileloader.hpp"
 
 #include "ultra_groth_prover.h"
-#include "prover.h"
+//#include "prover.h"
 
 
 static void
@@ -23,6 +23,17 @@ CopyError(
 {
     if (error_msg) {
         strncpy(error_msg, str, error_msg_maxsize);
+    }
+}
+
+static void
+CopyError(
+    char                 *error_msg,
+    unsigned long long    error_msg_maxsize,
+    const std::exception &e)
+{
+    if (error_msg) {
+        strncpy(error_msg, e.what(), error_msg_maxsize);
     }
 }
 
@@ -41,6 +52,44 @@ PrimeIsValid(mpz_srcptr prime)
     return is_valid;
 }
 
+static unsigned long long
+ProofBufferMinSize()
+{
+    return 810;
+}
+
+static unsigned long long
+PublicBufferMinSize(unsigned long long count)
+{
+    return count * 82 + 4;
+}
+
+int
+ultragroth_public_size_for_zkey_buf(
+    const void          *zkey_buffer,
+    unsigned long long   zkey_size,
+    unsigned long long  *public_size,
+    char                *error_msg,
+    unsigned long long   error_msg_maxsize)
+{
+    try {
+        BinFileUtils::BinFile zkey(zkey_buffer, zkey_size, "zkey", 1);
+        auto zkeyHeader = ZKeyUtils::loadHeader(&zkey);
+
+        *public_size = PublicBufferMinSize(zkeyHeader->nPublic);
+
+    } catch (std::exception& e) {
+        CopyError(error_msg, error_msg_maxsize, e);
+        return PROVER_ERROR;
+
+    } catch (...) {
+        CopyError(error_msg, error_msg_maxsize, "unknown error");
+        return PROVER_ERROR;
+    }
+
+    return PROVER_OK;
+}
+
 struct UltraGrothProver {
     BinFileUtils::BinFile zkey;
     std::unique_ptr<ZKeyUtils::Header> zkeyHeader;
@@ -56,27 +105,53 @@ struct UltraGrothProver {
             throw std::invalid_argument("zkey curve not supported");
         }
 
-        // TODO Think about extra params
+        // HeaderGroth(2)
+        //n8q
+        //q
+        //n8r
+        //r
+        //NVars
+        //NPub
+        //DomainSize  (multiple of 2
+        //[alpha]1
+        //[beta]1
+        //[beta]2
+        //[gamma]2
+        //[delta1]1
+        //[delta1]2
+        //[delta2]1
+        //[delta2]2
+
+        // IC(3)
+        // Coefs(4)
+        // PointsA(5)
+        // PointsB1(6)
+        // PointsB2(7)
+        // PointsC1(8)
+        // PointsC2(9)
+        // PointsH(10)
+        // Contributions(11)
+
         prover = UltraGroth::makeProver<AltBn128::Engine>(
             zkeyHeader->nVars,
             zkeyHeader->nPublic,
             zkeyHeader->domainSize,
             zkeyHeader->nCoefs,
-            (uint32_t*)nullptr,            // round indexes
-            (uint32_t*)nullptr,            // final round indexes
-            zkeyHeader->vk_alpha1,
-            zkeyHeader->vk_beta1,
-            zkeyHeader->vk_beta2,
-            (void*)nullptr,            // final delta 1
-            (void*)nullptr,            // final delta 2
-            (void*)nullptr,            // round delta 1
+            (uint32_t*)nullptr,        // round indexes
+            (uint32_t*)nullptr,        // final round indexes
+            zkeyHeader->alpha1,
+            zkeyHeader->beta1,
+            zkeyHeader->beta2,
+            zkeyHeader->final_delta1,   // final delta 1
+            zkeyHeader->final_delta2,   // final delta 2
+            zkeyHeader->round_delta1,   // round delta 1
             zkey.getSectionData(4),    // Coefs
             zkey.getSectionData(5),    // pointsA
             zkey.getSectionData(6),    // pointsB1
             zkey.getSectionData(7),    // pointsB2
-            zkey.getSectionData(8),    // final points C
-            (void*)nullptr,            // round points C
-            zkey.getSectionData(9)     // pointsH1
+            zkey.getSectionData(9),    // final points C
+            zkey.getSectionData(8),    // round points C
+            zkey.getSectionData(10)     // pointsH1
         );
     }
 };
@@ -97,8 +172,9 @@ ultra_groth_prover_create(
         if (zkey_buffer == NULL) {
             throw std::invalid_argument("Null zkey buffer");
         }
-
+        std::cout << "Zkey reading" << std::endl;
         UltraGrothProver *prover = new UltraGrothProver(zkey_buffer, zkey_size);
+        std::cout << "Zkey processed" << std::endl;
 
         *prover_object = prover;
 

@@ -39,12 +39,14 @@ std::unique_ptr<Header> loadHeader(BinFileUtils::BinFile *f) {
     h->nPublic = f->readU32LE();
     h->domainSize = f->readU32LE();
 
-    h->vk_alpha1 = f->read(h->n8q*2);
-    h->vk_beta1 = f->read(h->n8q*2);
-    h->vk_beta2 = f->read(h->n8q*4);
-    h->vk_gamma2 = f->read(h->n8q*4);
-    h->vk_delta1 = f->read(h->n8q*2);
-    h->vk_delta2 = f->read(h->n8q*4);
+    h->alpha1 = f->read(h->n8q*2);
+    h->beta1 = f->read(h->n8q*2);
+    h->beta2 = f->read(h->n8q*4);
+    h->gamma2 = f->read(h->n8q*4);
+    h->round_delta1 = f->read(h->n8q*2);
+    h->round_delta2 = f->read(h->n8q*4);
+    h->final_delta1 = f->read(h->n8q*2);
+    h->final_delta2 = f->read(h->n8q*4);
     f->endReadSection();
 
     h->nCoefs = f->getSectionSize(4) / (12 + h->n8r);

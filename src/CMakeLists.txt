@@ -90,8 +90,8 @@ set(LIB_SOURCES
     logger.cpp
     fileloader.cpp
     fileloader.hpp
-    prover.cpp
-    prover.h
+    #prover.cpp
+    #prover.h
     ultra_groth_prover.cpp
     ultra_groth_prover.h
     verifier.cpp
@@ -120,51 +120,51 @@ add_library(rapidsnarkStaticFrFq STATIC ${LIB_SOURCES} ${FQ_SOURCES} ${FR_SOURCE
 set_target_properties(rapidsnarkStaticFrFq PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(rapidsnarkStaticFrFq PROPERTIES OUTPUT_NAME rapidsnark-fr-fq)
 
-add_executable(prover main_prover.cpp)
-target_link_libraries(prover rapidsnarkStatic)
+#add_executable(prover main_prover.cpp)
+#target_link_libraries(prover rapidsnarkStatic)
 
 find_package(OpenSSL REQUIRED)
 add_executable(ultra_groth main_ultra_groth.cpp)
 target_link_libraries(ultra_groth rapidsnarkStatic OpenSSL::Crypto)
 
-add_executable(verifier main_verifier.cpp)
-target_link_libraries(verifier rapidsnarkStatic)
+#add_executable(verifier main_verifier.cpp)
+#target_link_libraries(verifier rapidsnarkStatic)
 
 add_library(rapidsnark SHARED ${LIB_SOURCES})
 
 if((USE_LOGGER OR NOT USE_OPENMP) AND NOT TARGET_PLATFORM MATCHES "android")
-    target_link_libraries(prover pthread)
+    #target_link_libraries(prover pthread)
     target_link_libraries(verifier pthread)
 endif()
 
 if(USE_SODIUM)
-    target_link_libraries(prover sodium)
+    #target_link_libraries(prover sodium)
 endif()
 
-option(BUILD_TESTS "Build the tests" ON)
-
-if(BUILD_TESTS)
-    enable_testing()
-    add_executable(test_public_size test_public_size.c)
-    target_link_libraries(test_public_size rapidsnarkStaticFrFq pthread)
-    add_test(NAME test_public_size COMMAND test_public_size circuit_final.zkey 86
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/testdata)
-endif()
+#option(BUILD_TESTS "Build the tests" ON)
+#
+#if(BUILD_TESTS)
+#    enable_testing()
+#    add_executable(test_public_size test_public_size.c)
+#    target_link_libraries(test_public_size rapidsnarkStaticFrFq pthread)
+#    add_test(NAME test_public_size COMMAND test_public_size circuit_final.zkey 86
+#            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/testdata)
+#endif()
 
 if(OpenMP_CXX_FOUND)
 
     if(TARGET_PLATFORM MATCHES "android")
-        target_link_libraries(prover -static-openmp -fopenmp)
-        target_link_libraries(verifier -static-openmp -fopenmp)
+        #target_link_libraries(prover -static-openmp -fopenmp)
+        #target_link_libraries(verifier -static-openmp -fopenmp)
         target_link_libraries(rapidsnark -static-openmp -fopenmp)
 
     elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
-        target_link_libraries(prover OpenMP::OpenMP_CXX)
-        target_link_libraries(verifier OpenMP::OpenMP_CXX)
-        target_link_libraries(test_public_size OpenMP::OpenMP_CXX)
+        #target_link_libraries(prover OpenMP::OpenMP_CXX)
+        #target_link_libraries(verifier OpenMP::OpenMP_CXX)
+        #target_link_libraries(test_public_size OpenMP::OpenMP_CXX)
     endif()
 
 endif()
 
 
-add_executable(test_prover test_prover.cpp)
+#add_executable(test_prover test_prover.cpp)

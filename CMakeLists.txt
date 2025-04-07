@@ -54,7 +54,7 @@ endif()
 add_subdirectory(src)
 
 
-install(TARGETS prover verifier rapidsnark rapidsnarkStatic rapidsnarkStaticFrFq test_prover fr fq
+install(TARGETS rapidsnark rapidsnarkStatic rapidsnarkStaticFrFq fr fq # prover, verifier, test_prover were here
     RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
     BUNDLE DESTINATION ${CMAKE_INSTALL_PREFIX}/app
     LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
@@ -62,7 +62,7 @@ install(TARGETS prover verifier rapidsnark rapidsnarkStatic rapidsnarkStaticFrFq
 install(FILES "${GMP_LIB_DIR}/${GMP_LIB_FILE}"
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
-install(FILES src/prover.h src/verifier.h
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+#install(FILES src/prover.h src/verifier.h
+#    DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 
 enable_testing()

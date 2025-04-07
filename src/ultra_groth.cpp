@@ -338,13 +338,6 @@ Prover<Engine>::execute_final_round(
     return {A, B, C};
 };
 
-static uint64_t *
-get_wtns() {
-    return nullptr;
-}
-
-round_indexes[i] == *(round_indexes + i)
-
 template <typename Engine>
 std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
 
@@ -352,7 +345,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     // Get from rust code uint64_t *wtns, uint32_t *wtns_indexes, uint32_t wtns_count
     
     // TODO Plug for now
-    uint64_t *wtns = get_wtns();
+    uint64_t *wtns = nullptr;
     uint32_t *wtns_indexes = nullptr;
     uint32_t wtns_count = 17;
     // index in public input corresponding to derived challenge
@@ -367,14 +360,17 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     typename Engine::FrElement *round_wtns = new typename Engine::FrElement[round_wtns_count];
 
     // Convert witness from uint64 to FrElement
-    //for (uint32_t i = 0; i < round_wtns_count; i += 4){
-    //    typename Engine::FrElement tmp;
-    //    tmp.v[0] = round_wtns[i];
-    //    tmp.v[1] = round_wtns[i + 1];
-    //    tmp.v[2] = round_wtns[i + 2];
-    //    tmp.v[3] = round_wtns[i + 3];
-    //    round_wtns
-    //}
+    for (uint32_t i = 0; i < round_wtns_count; i++){
+        typename Engine::FrElement tmp;
+        uint32_t index = round_indexes[i];
+        tmp.v[0] = wtns[index];
+        tmp.v[1] = wtns[index + 1];
+        tmp.v[2] = wtns[index + 2];
+        tmp.v[3] = wtns[index + 3];
+        round_wtns[i] = tmp;
+    }
+
+    std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement> round_result = execute_round(round_wtns, round_wtns_count, accumulator);
 
     // buffer to hash challenge index + accumulator
     uint8_t buffer[4 + 32];
@@ -383,13 +379,6 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     memcpy(buffer, &challenge_index, sizeof(uint32_t));
     memcpy(buffer + 4, accumulator, 32 * sizeof(uint8_t));
     SHA256(buffer, 4 + 32, challange);
-    // TODO Copy here
-
-    std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement> round_result = execute_round(round_wtns, round_wtns_count, accumulator);
-    
-    // TODO Call Rust function and maybe pass accumulator, round_random_factor
-    // And get uint32_t *final_wtns_indexes, uint32_t final_wtns_count
-    // We calculate final_wtns
 
     // TODO plug №2
     uint32_t *final_wtns_indexes = nullptr;
@@ -403,7 +392,16 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     uint32_t final_round_wtns_count = 0;
     typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_wtns_count];
 
-    // TODO Copy here
+    // Convert witness from uint64 to FrElement
+    for (uint32_t i = 0; i < final_round_wtns_count; i++){
+        typename Engine::FrElement tmp;
+        uint32_t index = final_round_indexes[i];
+        tmp.v[0] = wtns[index];
+        tmp.v[1] = wtns[index + 1];
+        tmp.v[2] = wtns[index + 2];
+        tmp.v[3] = wtns[index + 3];
+        final_round_wtns[i] = tmp;
+    }
 
     // Pass converted start wtns
     std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine> final_round_result = execute_final_round(
@@ -419,6 +417,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     E.g2.copy(p->B, std::get<1>(final_round_result));
     E.g1.copy(p->final_commitment, std::get<2>(final_round_result));
     E.g1.copy(p->round_commitment, round_commitment);
+
     return std::unique_ptr<Proof<Engine>>(p);
 }
 

@@ -14,12 +14,12 @@
 #include "binfile_utils.hpp"
 #include "fileloader.hpp"
 
-#include "prover.h"
+//#include "prover.h"
 #include "ultra_groth_prover.h"
-
 
 int main(int argc, char **argv) {
 
+    std::cout << "Entry" << std::endl;
     if (argc != 2) {
         std::cerr << "Invalid number of parameters" << std::endl;
         std::cerr << "Usage: prover <circuit.zkey>" << std::endl;
@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
         char                     errorMsg[1024];
 
 
-        int error = groth16_public_size_for_zkey_buf(
+        int error = ultragroth_public_size_for_zkey_buf(
             zkeyFile.dataBuffer(),
             zkeyFile.dataSize(),
             &publicSize,
