@@ -4,6 +4,8 @@ bionetta-prover/
 
 *.zkey
 *.json
+*.sym
+*.wtns
 
 # Logs
 logs

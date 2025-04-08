@@ -10,8 +10,7 @@ project(rapidsnark LANGUAGES CXX C ASM)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/bionetta-prover/src/target/release/libwitness_generator.a) # Use .a for static library
-include_directories(${CMAKE_SOURCE_DIR}/bionetta-prover/include)
+set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/bionetta-prover/target/release/libwitness_generator.a) # Use .a for static library
 
 message("BITS_PER_CHUNK=" ${BITS_PER_CHUNK})
 message("USE_ASM=" ${USE_ASM})

@@ -6,6 +6,7 @@
 #include <mutex>
 #include <tuple>
 #include <openssl/sha.h>
+#include "rounds_extern.h"
 
 
 namespace UltraGroth {
@@ -349,16 +350,9 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     // Get from rust code uint64_t *wtns, uint32_t *wtns_indexes, uint32_t wtns_count
     
     // TODO Plug for now
-    uint64_t *wtns_digits = new uint64_t[4 * 69761];
+    RoundOneOut out1 = round1();
+    uint64_t *wtns_digits = out1.witness_digits;
     uint32_t wtns_count = 4*69761;
-    std::memset(wtns_digits, 0, wtns_count * sizeof(uint64_t));
-    std::cout << "Digits initialization" << std::endl;
-    for (uint64_t i = 0; i < wtns_count; i += 4){
-        wtns_digits[i] = i;
-        wtns_digits[i + 1] = 0;
-        wtns_digits[i + 2] = 0;
-        wtns_digits[i + 3] = 0;
-    }
 
     // Load digits into FrElement type
     typename Engine::FrElement *wtns = new typename Engine::FrElement[wtns_count >> 2];
@@ -385,9 +379,11 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     // here cloning of appropriate part of witness for first round should happen
     typename Engine::FrElement *round_wtns = new typename Engine::FrElement[round_indexes_count];
 
+    std::cout << "Casting round wtns" << std::endl;
     // Convert witness from uint64 to FrElement
     for (uint32_t i = 0; i < round_indexes_count; i++){
         uint32_t index = round_indexes[i];
+        std::cout << index << std::endl;
         round_wtns[i] = wtns[index];
     }
 

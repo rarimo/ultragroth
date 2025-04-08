@@ -92,6 +92,7 @@ set(LIB_SOURCES
     fileloader.hpp
     #prover.cpp
     #prover.h
+    rounds_extern.h
     ultra_groth_prover.cpp
     ultra_groth_prover.h
     verifier.cpp
@@ -125,6 +126,7 @@ set_target_properties(rapidsnarkStaticFrFq PROPERTIES OUTPUT_NAME rapidsnark-fr-
 
 find_package(OpenSSL REQUIRED)
 add_executable(ultra_groth main_ultra_groth.cpp)
+
 target_link_libraries(ultra_groth rapidsnarkStatic OpenSSL::Crypto ${BIONETTA_PROVER_LIB})
 
 #add_executable(verifier main_verifier.cpp)
