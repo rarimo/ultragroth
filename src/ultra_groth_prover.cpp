@@ -142,9 +142,9 @@ struct UltraGrothProver {
             zkeyHeader->nPublic,
             zkeyHeader->domainSize,
             zkeyHeader->nCoefs,
-            std::get<0>(indexes).data(), // round indexes
+            std::get<0>(indexes), // round indexes
             std::get<0>(indexes).size(), // round indexes
-            std::get<1>(indexes).data(), // final round indexes
+            std::get<1>(indexes), // final round indexes
             std::get<1>(indexes).size(), // final round indexes
             zkeyHeader->alpha1,
             zkeyHeader->beta1,

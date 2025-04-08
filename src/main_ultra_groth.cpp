@@ -2,6 +2,7 @@
 #include <string>
 #include <cstring>
 #include <stdexcept>
+#include <vector>
 
 #include <gmp.h>
 #include <openssl/sha.h>
@@ -68,4 +69,5 @@ int main(int argc, char **argv) {
     }
     
     exit(EXIT_SUCCESS);
+
 }

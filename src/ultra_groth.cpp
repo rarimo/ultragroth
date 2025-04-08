@@ -17,9 +17,9 @@ std::unique_ptr<Prover<Engine>> makeProver(
     u_int32_t nPublic,
     u_int32_t domainSize,
     u_int64_t nCoefs,
-    uint32_t *round_indexes,
+    vector<uint32_t> round_indexes,
     uint32_t round_indexes_count,
-    uint32_t *final_round_indexes,
+    vector<uint32_t> final_round_indexes,
     uint32_t final_round_indexes_count,
     void *vk_alpha1,
     void *vk_beta1,
@@ -352,14 +352,13 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     // TODO Plug for now
     RoundOneOut out1 = round1();
     uint64_t *wtns_digits = out1.witness_digits;
-    uint32_t wtns_count = 4*69761;
 
     // Load digits into FrElement type
-    typename Engine::FrElement *wtns = new typename Engine::FrElement[wtns_count >> 2];
+    typename Engine::FrElement *wtns = new typename Engine::FrElement[WITNESS_SIZE];
 
     std::cout << "Wtns cast started" << std::endl;
 
-    for (uint32_t i = 0; i < wtns_count >> 2; i += 4){
+    for (uint32_t i = 0; i < WITNESS_SIZE; i += 4){
         typename Engine::FrElement tmp;
         tmp.v[0] = wtns_digits[i];
         tmp.v[1] = wtns_digits[i + 1];
@@ -383,7 +382,6 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     // Convert witness from uint64 to FrElement
     for (uint32_t i = 0; i < round_indexes_count; i++){
         uint32_t index = round_indexes[i];
-        std::cout << index << std::endl;
         round_wtns[i] = wtns[index];
     }
 
@@ -398,10 +396,6 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     memcpy(buffer, &challenge_index, sizeof(uint32_t));
     memcpy(buffer + 4, accumulator, 32 * sizeof(uint8_t));
     SHA256(buffer, 4 + 32, challange);
-
-    // TODO plug №2
-    uint32_t *final_wtns_indexes = nullptr;
-    uint32_t final_wtns_count = 0;
     
     round_commitment = std::get<0>(round_result);
     round_random_factor = std::get<1>(round_result);
