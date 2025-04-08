@@ -349,21 +349,6 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     RoundOneOut out1 = round1();
     uint64_t *wtns_digits = out1.witness_digits;
 
-    // Load digits into FrElement type
-    typename Engine::FrElement *wtns = new typename Engine::FrElement[WITNESS_SIZE];
-
-    std::cout << "Wtns cast started" << std::endl;
-
-    for (uint32_t i = 0; i < WITNESS_SIZE; i += 4){
-        typename Engine::FrElement tmp;
-        tmp.v[0] = wtns_digits[i];
-        tmp.v[1] = wtns_digits[i + 1];
-        tmp.v[2] = wtns_digits[i + 2];
-        tmp.v[3] = wtns_digits[i + 3];
-        wtns[i] = tmp;
-    }
-
-    std::cout << "Wtns casted" << std::endl;
     // index in public input corresponding to derived challenge
     uint32_t challenge_index = 0;
     
@@ -376,9 +361,17 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
 
     std::cout << "Casting round wtns" << std::endl;
     // Convert witness from uint64 to FrElement
-    for (uint32_t i = 0; i < round_indexes.size(); i++){
-        uint32_t index = round_indexes[i];
-        round_wtns[i] = wtns[index];
+
+    for (int i = 0; i < round_indexes.size(); i++){
+
+        typename Engine::FrElement tmp; 
+        uint32_t index = round_indexes[i] << 2;
+        tmp.v[0] = wtns_digits[index + 0];
+        tmp.v[1] = wtns_digits[index + 1];
+        tmp.v[2] = wtns_digits[index + 2];
+        tmp.v[3] = wtns_digits[index + 3];
+        round_wtns[i] = tmp;
+
     }
 
     std::cout << "Executre first round" << std::endl;
@@ -397,14 +390,30 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     round_random_factor = std::get<1>(round_result);
     delete[] round_wtns;
 
-    // here cloning of appropriate part of witness for fimal round should happen
+    uint64_t *out2 = round2(out1, reinterpret_cast<uint64_t*>(challange));
+
     typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_indexes.size()];
+    typename Engine::FrElement *wtns = new typename Engine::FrElement[WITNESS_SIZE];
 
     // Convert witness from uint64 to FrElement
-    for (uint32_t i = 0; i < final_round_indexes.size(); i++){
-        typename Engine::FrElement tmp;
+    for (int i = 0; i < WITNESS_SIZE; i++){
+
+        typename Engine::FrElement tmp; 
+        uint32_t index = i << 2;
+        tmp.v[0] = wtns_digits[index + 0];
+        tmp.v[1] = wtns_digits[index + 1];
+        tmp.v[2] = wtns_digits[index + 2];
+        tmp.v[3] = wtns_digits[index + 3];
+        wtns[i] = tmp;
+        
+    }
+
+    // Convert witness from uint64 to FrElement
+    for (int i = 0; i < final_round_indexes.size(); i++){
+
         uint32_t index = final_round_indexes[i];
-        final_round_wtns[i] = wtns[index];
+        final_round_wtns[i] = wtns[index]; 
+        
     }
 
     std::cout << "Execute final round" << std::endl;

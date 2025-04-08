@@ -1,5 +1,5 @@
-#ifndef GROTH16_HPP
-#define GROTH16_HPP
+#ifndef ULTRA_GROTH_HPP
+#define ULTRA_GROTH_HPP
 
 #include <string>
 #include <array>
