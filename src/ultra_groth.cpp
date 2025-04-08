@@ -1,12 +1,12 @@
 #include "random_generator.hpp"
 #include "logging.hpp"
 #include "misc.hpp"
+#include "rounds_extern.h"
 #include <sstream>
 #include <vector>
 #include <mutex>
 #include <tuple>
 #include <openssl/sha.h>
-#include "rounds_extern.h"
 
 
 namespace UltraGroth {
@@ -17,10 +17,8 @@ std::unique_ptr<Prover<Engine>> makeProver(
     u_int32_t nPublic,
     u_int32_t domainSize,
     u_int64_t nCoefs,
-    vector<uint32_t> round_indexes,
-    uint32_t round_indexes_count,
-    vector<uint32_t> final_round_indexes,
-    uint32_t final_round_indexes_count,
+    std::vector<uint32_t> round_indexes,
+    std::vector<uint32_t> final_round_indexes,
     void *vk_alpha1,
     void *vk_beta1,
     void *vk_beta2,
@@ -42,9 +40,7 @@ std::unique_ptr<Prover<Engine>> makeProver(
         domainSize,
         nCoefs,
         round_indexes,
-        round_indexes_count,
         final_round_indexes,
-        final_round_indexes_count,
         *(typename Engine::G1PointAffine *)vk_alpha1,
         *(typename Engine::G1PointAffine *)vk_beta1,
         *(typename Engine::G2PointAffine *)vk_beta2,
@@ -136,7 +132,7 @@ Prover<Engine>::execute_final_round(
     typename Engine::G1Point pi_c;
     E.g1.multiMulByScalarMSM(pi_c, final_pointsC, (uint8_t *)final_wtns /* here should be final wtns 
                                                                                                 elements; change later*/, 
-                            sW, final_round_indexes_count /*here should be final wtns count*/);
+                            sW, final_round_indexes.size() /*here should be final wtns count*/);
     std::ostringstream ss5;
     ss5 << "pi_c: " << E.g1.toString(pi_c);
     LOG_DEBUG(ss5);
@@ -376,17 +372,17 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     typename Engine::G1PointAffine round_commitment;
     
     // here cloning of appropriate part of witness for first round should happen
-    typename Engine::FrElement *round_wtns = new typename Engine::FrElement[round_indexes_count];
+    typename Engine::FrElement *round_wtns = new typename Engine::FrElement[round_indexes.size()];
 
     std::cout << "Casting round wtns" << std::endl;
     // Convert witness from uint64 to FrElement
-    for (uint32_t i = 0; i < round_indexes_count; i++){
+    for (uint32_t i = 0; i < round_indexes.size(); i++){
         uint32_t index = round_indexes[i];
         round_wtns[i] = wtns[index];
     }
 
     std::cout << "Executre first round" << std::endl;
-    std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement> round_result = execute_round(round_wtns, round_indexes_count, accumulator);
+    std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement> round_result = execute_round(round_wtns, round_indexes.size(), accumulator);
     std::cout << "First round done" << std::endl;
 
     // buffer to hash challenge index + accumulator
@@ -402,10 +398,10 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     delete[] round_wtns;
 
     // here cloning of appropriate part of witness for fimal round should happen
-    typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_indexes_count];
+    typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_indexes.size()];
 
     // Convert witness from uint64 to FrElement
-    for (uint32_t i = 0; i < final_round_indexes_count; i++){
+    for (uint32_t i = 0; i < final_round_indexes.size(); i++){
         typename Engine::FrElement tmp;
         uint32_t index = final_round_indexes[i];
         final_round_wtns[i] = wtns[index];
