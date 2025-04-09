@@ -133,8 +133,6 @@ struct UltraGrothProver {
         // PointsH(10)
         // Contributions(11)
 
-        std::tuple<std::vector<uint32_t>, std::vector<uint32_t>> indexes = ZKeyUtils::load_indexes("data.json");
-
         std::cout << "Make prover call" << std::endl;
 
         prover = UltraGroth::makeProver<AltBn128::Engine>(

@@ -74,13 +74,13 @@ parse_key(const char *key_str)
         auto nPublic  = key_json["nPublic"].template get<int64_t>();
 
         if (protocol != "ultragroth" || curve != "bn128") {
-            throw std::invalid_argument("invalid verification key data");
+            throw std::invalid_argument("invalid verification key data: protocol does not match");
         }
 
         key.fromJson(key_json);
 
         if (key.IC.empty()) {
-            throw std::invalid_argument("invalid verification key data");
+            throw std::invalid_argument("invalid verification key data: IC is empty");
         }
 
     } catch(...) {
