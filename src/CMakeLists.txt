@@ -99,9 +99,9 @@ set(
     fileloader.hpp
     rounds_extern.h
     prover_ultra_groth.cpp
-    prover_ultra_groth.h
+    prover_ultra_groth.hpp
     verifier_ultra_groth.cpp
-    verifier_ultra_groth.h
+    verifier_ultra_groth.hpp
     ../depends/ffiasm/c/misc.cpp
     ../depends/ffiasm/c/naf.cpp
     ../depends/ffiasm/c/splitparstr.cpp
