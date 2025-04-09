@@ -22,21 +22,26 @@ if(USE_ASM AND ARCH MATCHES "x86_64")
         set(NASM_FLAGS -felf64 -DPIC)
     endif()
 
-    add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/build/fq_asm.o
+    add_custom_command(
+        OUTPUT ${CMAKE_SOURCE_DIR}/build/fq_asm.o
         COMMAND nasm ${NASM_FLAGS} fq.asm -o fq_asm.o
         DEPENDS ${CMAKE_SOURCE_DIR}/build/fq.asm
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/build)
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/build
+    )
 
-    add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/build/fr_asm.o
+    add_custom_command(
+        OUTPUT ${CMAKE_SOURCE_DIR}/build/fr_asm.o
         COMMAND nasm ${NASM_FLAGS} fr.asm -o fr_asm.o
         DEPENDS ${CMAKE_SOURCE_DIR}/build/fr.asm
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/build)
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/build
+    )
 endif()
 
-set(FR_SOURCES
+set(
+    FR_SOURCES
     ../build/fr.hpp
     ../build/fr.cpp
-    )
+)
 
 if(USE_ASM)
     if(ARCH MATCHES "arm64")
@@ -53,10 +58,11 @@ set_target_properties(fr PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 link_libraries(fr)
 
-set(FQ_SOURCES
+set(
+    FQ_SOURCES
     ../build/fq.hpp
     ../build/fq.cpp
-    )
+)
 
 if(USE_ASM)
     if(ARCH MATCHES "arm64")
@@ -79,7 +85,8 @@ if(OpenMP_CXX_FOUND)
     add_compile_options(${OpenMP_CXX_FLAGS})
 endif()
 
-set(LIB_SOURCES
+set(
+    LIB_SOURCES
     binfile_utils.hpp
     binfile_utils.cpp
     zkey_utils.hpp
@@ -91,15 +98,15 @@ set(LIB_SOURCES
     fileloader.cpp
     fileloader.hpp
     rounds_extern.h
-    ultra_groth_prover.cpp
-    ultra_groth_prover.h
+    prover_ultra_groth.cpp
+    prover_ultra_groth.h
     verifier_ultra_groth.cpp
     verifier_ultra_groth.h
     ../depends/ffiasm/c/misc.cpp
     ../depends/ffiasm/c/naf.cpp
     ../depends/ffiasm/c/splitparstr.cpp
     ../depends/ffiasm/c/alt_bn128.cpp
-    )
+)
 
 if(USE_LOGGER)
     set(LIB_SOURCES ${LIB_SOURCES} logger.cpp)
@@ -110,7 +117,8 @@ include_directories(
     ../src
     ../build
     ../depends/ffiasm/c
-    ../depends/json/single_include)
+    ../depends/json/single_include
+)
 
 add_library(rapidsnarkStatic STATIC ${LIB_SOURCES})
 set_target_properties(rapidsnarkStatic PROPERTIES OUTPUT_NAME rapidsnark)
@@ -119,48 +127,12 @@ add_library(rapidsnarkStaticFrFq STATIC ${LIB_SOURCES} ${FQ_SOURCES} ${FR_SOURCE
 set_target_properties(rapidsnarkStaticFrFq PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(rapidsnarkStaticFrFq PROPERTIES OUTPUT_NAME rapidsnark-fr-fq)
 
+
 find_package(OpenSSL REQUIRED)
-add_executable(ultra_groth_prover main_ultra_groth.cpp)
-target_link_libraries(ultra_groth_prover rapidsnarkStatic OpenSSL::Crypto ${BIONETTA_PROVER_LIB})
+add_executable(prover_ultra_groth main_prover_ultra_groth.cpp)
+target_link_libraries(prover_ultra_groth rapidsnarkStatic OpenSSL::Crypto ${BIONETTA_PROVER_LIB})
 
 add_executable(ultra_groth_verifier main_verifier_ultra_groth.cpp)
 target_link_libraries(ultra_groth_verifier rapidsnarkStatic)
 
 add_library(rapidsnark SHARED ${LIB_SOURCES})
-
-if((USE_LOGGER OR NOT USE_OPENMP) AND NOT TARGET_PLATFORM MATCHES "android")
-    #target_link_libraries(prover pthread)
-    target_link_libraries(verifier pthread)
-endif()
-
-if(USE_SODIUM)
-    #target_link_libraries(prover sodium)
-endif()
-
-#option(BUILD_TESTS "Build the tests" ON)
-#
-#if(BUILD_TESTS)
-#    enable_testing()
-#    add_executable(test_public_size test_public_size.c)
-#    target_link_libraries(test_public_size rapidsnarkStaticFrFq pthread)
-#    add_test(NAME test_public_size COMMAND test_public_size circuit_final.zkey 86
-#            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/testdata)
-#endif()
-
-if(OpenMP_CXX_FOUND)
-
-    if(TARGET_PLATFORM MATCHES "android")
-        #target_link_libraries(prover -static-openmp -fopenmp)
-        #target_link_libraries(verifier -static-openmp -fopenmp)
-        target_link_libraries(rapidsnark -static-openmp -fopenmp)
-
-    elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
-        #target_link_libraries(prover OpenMP::OpenMP_CXX)
-        #target_link_libraries(verifier OpenMP::OpenMP_CXX)
-        #target_link_libraries(test_public_size OpenMP::OpenMP_CXX)
-    endif()
-
-endif()
-
-
-#add_executable(test_prover test_prover.cpp)

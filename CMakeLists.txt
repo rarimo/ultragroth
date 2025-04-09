@@ -10,10 +10,21 @@ project(rapidsnark LANGUAGES CXX C ASM)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# For linux
-#set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/bionetta-prover/target/x86_64-unknown-linux-gnu/release/libwitness_generator.a)
 
-set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/bionetta-prover/target/release/libwitness_generator.a) # Use .a for static library
+if(UNIX AND NOT APPLE)
+    # Linux
+    set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/bionetta-prover/target/x86_64-unknown-linux-gnu/release/libwitness_generator.a)
+
+# TODO Not specify for now
+#elseif(APPLE)
+    # macOS
+    
+    #set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/bionetta-prover/target/x86_64-unknown-linux-gnu/release/libwitness_generator.a)
+else()
+    # Other (e.g., Windows)
+    set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/bionetta-prover/target/release/libwitness_generator.a)
+endif()
+
 
 message("BITS_PER_CHUNK=" ${BITS_PER_CHUNK})
 message("USE_ASM=" ${USE_ASM})
@@ -57,15 +68,16 @@ endif()
 
 add_subdirectory(src)
 
-install(TARGETS rapidsnark rapidsnarkStatic rapidsnarkStaticFrFq fr fq # prover, verifier, test_prover were here
+install(
+    TARGETS rapidsnark rapidsnarkStatic rapidsnarkStaticFrFq fr fq
     RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
     BUNDLE DESTINATION ${CMAKE_INSTALL_PREFIX}/app
-    LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+    LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+)
 
-install(FILES "${GMP_LIB_DIR}/${GMP_LIB_FILE}"
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
-
-#install(FILES src/prover.h src/verifier.h
-#    DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+install(
+    FILES "${GMP_LIB_DIR}/${GMP_LIB_FILE}"
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+)
 
 enable_testing()

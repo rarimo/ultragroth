@@ -12,8 +12,7 @@
 #include "binfile_utils.hpp"
 #include "fileloader.hpp"
 
-#include "ultra_groth_prover.h"
-//#include "prover.h"
+#include "prover_ultra_groth.h"
 
 
 static void

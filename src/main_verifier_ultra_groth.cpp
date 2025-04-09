@@ -23,10 +23,12 @@ int main(int argc, char **argv)
 
         char errorMessage[256];
 
-        const int error = ultra_groth_verify(proof.dataAsString().c_str(),
-                                         inputs.dataAsString().c_str(),
-                                         key.dataAsString().c_str(),
-                                         errorMessage, sizeof(errorMessage));
+        const int error = ultra_groth_verify(
+            proof.dataAsString().c_str(),
+            inputs.dataAsString().c_str(),
+            key.dataAsString().c_str(),
+            errorMessage, sizeof(errorMessage)
+        );
 
         if (error == VERIFIER_VALID_PROOF) {
 

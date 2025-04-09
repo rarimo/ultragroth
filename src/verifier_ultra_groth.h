@@ -20,11 +20,13 @@ extern "C" {
  */
 
 int
-ultra_groth_verify(const char    *proof,
-               const char    *inputs,
-               const char    *verification_key,
-               char          *error_msg,
-               unsigned long  error_msg_maxsize);
+ultra_groth_verify(
+    const char    *proof,
+    const char    *inputs,
+    const char    *verification_key,
+    char          *error_msg,
+    unsigned long  error_msg_maxsize
+);
 
 #ifdef __cplusplus
 }
