@@ -3,9 +3,6 @@
 #include <alt_bn128.hpp>
 #include <nlohmann/json.hpp>
 
-#include "verifier.h"
-#include "groth16.hpp"
-
 #include "verifier_ultra_groth.h"
 #include "ultra_groth.hpp"
 
@@ -14,7 +11,7 @@ using json = nlohmann::json;
 static UltraGroth::Proof<AltBn128::Engine>
 parse_proof(const char *proof_str)
 {
-    Groth16::Proof<AltBn128::Engine> proof(AltBn128::Engine::engine);
+    UltraGroth::Proof<AltBn128::Engine> proof(AltBn128::Engine::engine);
 
     try {
         json proof_json = json::parse(proof_str);
