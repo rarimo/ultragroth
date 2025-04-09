@@ -131,12 +131,9 @@ Prover<Engine>::execute_final_round(
     ss4 << "pi_b: " << E.g2.toString(pi_b);
     LOG_DEBUG(ss4);
 
-    // There defenitely will be bug here with indices; fix later 
     LOG_TRACE("Start Multiexp C");
     typename Engine::G1Point pi_c;
-    E.g1.multiMulByScalarMSM(pi_c, final_pointsC, (uint8_t *)final_wtns /* here should be final wtns 
-                                                                                                elements; change later*/, 
-                            sW, final_round_indexes_count /*here should be final wtns count*/);
+    E.g1.multiMulByScalarMSM(pi_c, final_pointsC, (uint8_t *)final_wtns, sW, final_round_indexes_count);
     std::ostringstream ss5;
     ss5 << "pi_c: " << E.g1.toString(pi_c);
     LOG_DEBUG(ss5);
@@ -521,7 +518,8 @@ void VerificationKey<Engine>::fromJson(const json& key)
     G1PointAffineFromJson(E, alpha1, key["vk_alpha_1"]);
     G2PointAffineFromJson(E, beta2,  key["vk_beta_2"]);
     G2PointAffineFromJson(E, gamma2, key["vk_gamma_2"]);
-    G2PointAffineFromJson(E, final_delta2, key["vk_delta_2"]);
+    G2PointAffineFromJson(E, final_delta2, key["vk_delta_c2_2"]);
+    G2PointAffineFromJson(E, round_delta2, key["vk_delta_c1_2"]);
 
     auto j_ic = key["IC"];
 
@@ -586,7 +584,7 @@ bool Verifier<Engine>::verify(Proof<Engine> &proof, InputsVector &inputs,
     E.g1.neg(negFinalCommit, proof.final_commitment);
 
     typename Engine::G1Point negRoundCommit;
-    E.g1.neg(negFinalCommit, proof.round_commitment);
+    E.g1.neg(negRoundCommit, proof.round_commitment);
 
     typename Engine::G2Point pB;
     E.g2.copy(pB, proof.B);
@@ -601,7 +599,7 @@ bool Verifier<Engine>::verify(Proof<Engine> &proof, InputsVector &inputs,
     E.g2.copy(pFinalDelta, key.final_delta2);
 
     typename Engine::G2Point pRoundDelta;
-    E.g2.copy(pFinalDelta, key.round_delta2);
+    E.g2.copy(pRoundDelta, key.round_delta2);
 
     G1PointArray g1 = {pA, negAlpha, negvkX, negFinalCommit, negRoundCommit};
     G2PointArray g2 = {pB, pBeta, pGamma, pFinalDelta, pRoundDelta};
