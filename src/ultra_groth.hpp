@@ -195,8 +195,8 @@ namespace UltraGroth {
     class Verifier {
 
         typedef std::vector<typename Engine::Fr::Element> InputsVector;
-        typedef std::array<typename Engine::G1Point, 4> G1PointArray;
-        typedef std::array<typename Engine::G2Point, 4> G2PointArray;
+        typedef std::array<typename Engine::G1Point, 5> G1PointArray;
+        typedef std::array<typename Engine::G2Point, 5> G2PointArray;
 
         Engine &E;
 
