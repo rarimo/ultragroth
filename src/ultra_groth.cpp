@@ -348,8 +348,6 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
 
     // 1. Call round function from Rust code
     // Get from rust code uint64_t *wtns, uint32_t *wtns_indexes, uint32_t wtns_count
-    
-    // TODO Plug for now
     RoundOneOut out1 = round1();
     uint64_t *wtns_digits = out1.witness_digits;
 
@@ -364,10 +362,9 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     typename Engine::FrElement *round_wtns = new typename Engine::FrElement[round_indexes_count];
 
     std::cout << "Casting round wtns" << std::endl;
+
     // Convert witness from uint64 to FrElement
-
-    for (int i = 0; i < round_indexes_count; i++){
-
+    for (int i = 0; i < round_indexes_count; i++) {
         typename Engine::FrElement tmp; 
         uint32_t index = round_indexes[i] << 2;
         tmp.v[0] = wtns_digits[index + 0];
@@ -400,8 +397,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     typename Engine::FrElement *wtns = new typename Engine::FrElement[WITNESS_SIZE];
 
     // Convert witness from uint64 to FrElement
-    for (int i = 0; i < WITNESS_SIZE; i++){
-
+    for (int i = 0; i < WITNESS_SIZE; i++) {
         typename Engine::FrElement tmp; 
         uint32_t index = i << 2;
         tmp.v[0] = wtns_digits[index + 0];
@@ -409,7 +405,6 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
         tmp.v[2] = wtns_digits[index + 2];
         tmp.v[3] = wtns_digits[index + 3];
         wtns[i] = tmp;
-        
     }
 
     // Convert witness from uint64 to FrElement
@@ -441,7 +436,6 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
 }
 
 
-
 template <typename Engine>
 std::string Proof<Engine>::toJsonStr() {
 
@@ -460,8 +454,8 @@ json Proof<Engine>::toJson() {
     json p;
 
     p["pi_a"] = {};
-    p["pi_a"].push_back(E.f1.toString(A.x) );
-    p["pi_a"].push_back(E.f1.toString(A.y) );
+    p["pi_a"].push_back(E.f1.toString(A.x));
+    p["pi_a"].push_back(E.f1.toString(A.y));
     p["pi_a"].push_back("1" );
 
 
@@ -480,14 +474,14 @@ json Proof<Engine>::toJson() {
     p["pi_b"].push_back(z2);
 
     p["pi_f"] = {};
-    p["pi_f"].push_back(E.f1.toString(final_commitment.x) );
-    p["pi_f"].push_back(E.f1.toString(final_commitment.y) );
-    p["pi_f"].push_back("1" );
+    p["pi_f"].push_back(E.f1.toString(final_commitment.x));
+    p["pi_f"].push_back(E.f1.toString(final_commitment.y));
+    p["pi_f"].push_back("1");
 
     p["pi_r"] = {};
-    p["pi_r"].push_back(E.f1.toString(round_commitment.x) );
-    p["pi_r"].push_back(E.f1.toString(round_commitment.y) );
-    p["pi_r"].push_back("1" );
+    p["pi_r"].push_back(E.f1.toString(round_commitment.x));
+    p["pi_r"].push_back(E.f1.toString(round_commitment.y));
+    p["pi_r"].push_back("1");
 
     p["protocol"] = "ultragroth";
             
@@ -542,8 +536,8 @@ void VerificationKey<Engine>::fromJson(const json& key)
 }
 
 template <typename Engine>
-Verifier<Engine>::Verifier()
-    : E(Engine::engine)
+Verifier<Engine>::Verifier():
+    E(Engine::engine)
 {
     E.f2.fromString(xiToPMinus1Over3,
                     "21575463638280843010398324269430826099269044274347216827212613867836435027261,"

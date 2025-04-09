@@ -11,13 +11,11 @@
 #include <alt_bn128.hpp>
 
 #include "ultra_groth.hpp"
+#include "prover_ultra_groth.h"
 #include "zkey_utils.hpp"
 #include "wtns_utils.hpp"
 #include "binfile_utils.hpp"
 #include "fileloader.hpp"
-
-#include "prover_ultra_groth.h"
-#include "ultra_groth.hpp"
 
 
 int main(int argc, char **argv) {

@@ -1,10 +1,6 @@
 #ifndef VERIFIER_ULTRA_GROTH_HPP
 #define VERIFIER_ULTRA_GROTH_HPP
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 //Error codes returned by the functions.
 #define VERIFIER_VALID_PROOF        0x0
 #define VERIFIER_INVALID_PROOF      0x1
@@ -27,10 +23,5 @@ ultra_groth_verify(
     char          *error_msg,
     unsigned long  error_msg_maxsize
 );
-
-#ifdef __cplusplus
-}
-#endif
-
 
 #endif // VERIFIER_HPP

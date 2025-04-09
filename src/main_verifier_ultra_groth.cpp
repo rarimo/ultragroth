@@ -4,6 +4,7 @@
 #include "fileloader.hpp"
 #include "verifier_ultra_groth.h"
 
+
 int main(int argc, char **argv)
 {
     if (argc != 4) {
