@@ -1,5 +1,5 @@
-#ifndef ULTRA_GROTH_PROVER_H
-#define ULTRA_GROTH_PROVER_H
+#ifndef PROVER_ULTRA_GROTH_H
+#define PROVER_ULTRA_GROTH_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -69,4 +69,4 @@ ultra_groth_prover(
 }
 #endif
 
-#endif // ULTRA_GROTH_PROVER_HPP
+#endif // PROVER_ULTRA_GROTH_H

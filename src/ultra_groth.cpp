@@ -489,7 +489,7 @@ json Proof<Engine>::toJson() {
     p["pi_r"].push_back(E.f1.toString(round_commitment.y) );
     p["pi_r"].push_back("1" );
 
-    p["protocol"] = "ligma";
+    p["protocol"] = "ultragroth";
             
     return p;
 }

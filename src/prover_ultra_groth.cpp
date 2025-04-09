@@ -12,8 +12,7 @@
 #include "binfile_utils.hpp"
 #include "fileloader.hpp"
 
-#include "ultra_groth_prover.h"
-//#include "prover.h"
+#include "prover_ultra_groth.h"
 
 
 static void
@@ -132,8 +131,6 @@ struct UltraGrothProver {
         // PointsC2(9)
         // PointsH(10)
         // Contributions(11)
-
-        std::tuple<std::vector<uint32_t>, std::vector<uint32_t>> indexes = ZKeyUtils::load_indexes("data.json");
 
         std::cout << "Make prover call" << std::endl;
 
