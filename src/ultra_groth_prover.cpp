@@ -142,8 +142,10 @@ struct UltraGrothProver {
             zkeyHeader->nPublic,
             zkeyHeader->domainSize,
             zkeyHeader->nCoefs,
-            std::get<0>(indexes), // round indexes
-            std::get<1>(indexes), // final round indexes
+            zkey.getSectionData(10), // round indexes
+            zkeyHeader->num_indexes_c1,
+            zkey.getSectionData(11), // final round indexes
+            zkeyHeader->num_indexes_c2,
             zkeyHeader->alpha1,
             zkeyHeader->beta1,
             zkeyHeader->beta2,
@@ -156,7 +158,7 @@ struct UltraGrothProver {
             zkey.getSectionData(7),    // pointsB2
             zkey.getSectionData(9),    // final points C
             zkey.getSectionData(8),    // round points C
-            zkey.getSectionData(10)     // pointsH1
+            zkey.getSectionData(12)     // pointsH1
         );
     }
 };

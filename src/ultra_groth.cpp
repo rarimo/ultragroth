@@ -17,8 +17,10 @@ std::unique_ptr<Prover<Engine>> makeProver(
     u_int32_t nPublic,
     u_int32_t domainSize,
     u_int64_t nCoefs,
-    std::vector<uint32_t> round_indexes,
-    std::vector<uint32_t> final_round_indexes,
+    void *round_indexes,
+    uint32_t round_indexes_count,
+    void *final_round_indexes,
+    uint32_t final_round_indexes_count,
     void *vk_alpha1,
     void *vk_beta1,
     void *vk_beta2,
@@ -39,8 +41,10 @@ std::unique_ptr<Prover<Engine>> makeProver(
         nPublic,
         domainSize,
         nCoefs,
-        round_indexes,
-        final_round_indexes,
+        (uint32_t *)round_indexes,
+        round_indexes_count,
+        (uint32_t *)final_round_indexes,
+        final_round_indexes_count,
         *(typename Engine::G1PointAffine *)vk_alpha1,
         *(typename Engine::G1PointAffine *)vk_beta1,
         *(typename Engine::G2PointAffine *)vk_beta2,
@@ -132,7 +136,7 @@ Prover<Engine>::execute_final_round(
     typename Engine::G1Point pi_c;
     E.g1.multiMulByScalarMSM(pi_c, final_pointsC, (uint8_t *)final_wtns /* here should be final wtns 
                                                                                                 elements; change later*/, 
-                            sW, final_round_indexes.size() /*here should be final wtns count*/);
+                            sW, final_round_indexes_count /*here should be final wtns count*/);
     std::ostringstream ss5;
     ss5 << "pi_c: " << E.g1.toString(pi_c);
     LOG_DEBUG(ss5);
@@ -357,12 +361,12 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     typename Engine::G1PointAffine round_commitment;
     
     // here cloning of appropriate part of witness for first round should happen
-    typename Engine::FrElement *round_wtns = new typename Engine::FrElement[round_indexes.size()];
+    typename Engine::FrElement *round_wtns = new typename Engine::FrElement[round_indexes_count];
 
     std::cout << "Casting round wtns" << std::endl;
     // Convert witness from uint64 to FrElement
 
-    for (int i = 0; i < round_indexes.size(); i++){
+    for (int i = 0; i < round_indexes_count; i++){
 
         typename Engine::FrElement tmp; 
         uint32_t index = round_indexes[i] << 2;
@@ -375,7 +379,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     }
 
     std::cout << "Executre first round" << std::endl;
-    std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement> round_result = execute_round(round_wtns, round_indexes.size(), accumulator);
+    std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement> round_result = execute_round(round_wtns, round_indexes_count, accumulator);
     std::cout << "First round done" << std::endl;
 
     // buffer to hash challenge index + accumulator
@@ -392,7 +396,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
 
     uint64_t *out2 = round2(out1, reinterpret_cast<uint64_t*>(challange));
 
-    typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_indexes.size()];
+    typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_indexes_count];
     typename Engine::FrElement *wtns = new typename Engine::FrElement[WITNESS_SIZE];
 
     // Convert witness from uint64 to FrElement
@@ -409,7 +413,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     }
 
     // Convert witness from uint64 to FrElement
-    for (int i = 0; i < final_round_indexes.size(); i++){
+    for (int i = 0; i < final_round_indexes_count; i++){
 
         uint32_t index = final_round_indexes[i];
         final_round_wtns[i] = wtns[index]; 
@@ -445,7 +449,7 @@ std::string Proof<Engine>::toJsonStr() {
     ss << "{ \"pi_a\":[\"" << E.f1.toString(A.x) << "\",\"" << E.f1.toString(A.y) << "\",\"1\"], ";
     ss << " \"pi_b\": [[\"" << E.f1.toString(B.x.a) << "\",\"" << E.f1.toString(B.x.b) << "\"],[\"" << E.f1.toString(B.y.a) << "\",\"" << E.f1.toString(B.y.b) << "\"], [\"1\",\"0\"]], ";
     ss << " \"pi_c\": [\"" << E.f1.toString(final_commitment.x) << "\",\"" << E.f1.toString(final_commitment.y) << "\",\"1\"], ";
-    ss << " \"protocol\":\"ligma\" }";
+    ss << " \"protocol\":\"ultragroth\" }";
         
     return ss.str();
 }

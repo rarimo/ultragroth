@@ -21,7 +21,7 @@ parse_proof(const char *proof_str)
 
         std::string protocol = proof_json["protocol"].template get<std::string>();
 
-        if (protocol != "ligma") {
+        if (protocol != "ultragroth") {
             throw std::invalid_argument("invalid proof data");
         }
 
@@ -76,7 +76,7 @@ parse_key(const char *key_str)
         auto curve    = key_json["curve"].template get<std::string>();
         auto nPublic  = key_json["nPublic"].template get<int64_t>();
 
-        if (protocol != "ligma" || curve != "bn128") {
+        if (protocol != "ultragroth" || curve != "bn128") {
             throw std::invalid_argument("invalid verification key data");
         }
 

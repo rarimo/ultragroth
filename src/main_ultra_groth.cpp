@@ -69,21 +69,6 @@ int main(int argc, char **argv) {
         std::cerr << "Error: " << e.what() << std::endl;
         return EXIT_FAILURE;
     }
-
-    std::ifstream file("data.json");
-    if (!file.is_open()) {
-        throw std::invalid_argument( "Failed to open JSON" );
-    }
-
-    json data;
-    file >> data;
-
-
-    UltraGroth::Proof<AltBn128::Engine> proof(AltBn128::Engine::engine);
-    proof.fromJson(data);
-    UltraGroth::Verifier<AltBn128::Engine> verifier;
-
-    //bool valid = verifier.verify();
     
     exit(EXIT_SUCCESS);
 
