@@ -12,7 +12,7 @@
 #include "binfile_utils.hpp"
 #include "fileloader.hpp"
 
-#include "prover_ultra_groth.h"
+#include "prover_ultra_groth.hpp"
 
 
 static void
@@ -90,47 +90,48 @@ ultragroth_public_size_for_zkey_buf(
     return PROVER_OK;
 }
 
+
+// HeaderGroth(2)
+//n8q
+//q
+//n8r
+//r
+//NVars
+//NPub
+//DomainSize  (multiple of 2)
+//[alpha]1
+//[beta]1
+//[beta]2
+//[gamma]2
+//[delta1]1
+//[delta1]2
+//[delta2]1
+//[delta2]2
+
+// IC(3)
+// Coefs(4)
+// PointsA(5)
+// PointsB1(6)
+// PointsB2(7)
+// PointsC1(8)
+// PointsC2(9)
+// PointsH(10)
+// Contributions(11)
 struct UltraGrothProver {
     BinFileUtils::BinFile zkey;
     std::unique_ptr<ZKeyUtils::Header> zkeyHeader;
     std::unique_ptr<UltraGroth::Prover<AltBn128::Engine>> prover;
 
-    UltraGrothProver(const void         *zkey_buffer,
-                     unsigned long long  zkey_size)
-
-        : zkey(zkey_buffer, zkey_size, "zkey", 1),
-          zkeyHeader(ZKeyUtils::loadHeader(&zkey))
+    UltraGrothProver(
+        const void         *zkey_buffer,
+        unsigned long long  zkey_size
+    ):    
+        zkey(zkey_buffer, zkey_size, "zkey", 1),
+        zkeyHeader(ZKeyUtils::loadHeader(&zkey))
     {
         if (!PrimeIsValid(zkeyHeader->rPrime)) {
             throw std::invalid_argument("zkey curve not supported");
         }
-
-        // HeaderGroth(2)
-        //n8q
-        //q
-        //n8r
-        //r
-        //NVars
-        //NPub
-        //DomainSize  (multiple of 2
-        //[alpha]1
-        //[beta]1
-        //[beta]2
-        //[gamma]2
-        //[delta1]1
-        //[delta1]2
-        //[delta2]1
-        //[delta2]2
-
-        // IC(3)
-        // Coefs(4)
-        // PointsA(5)
-        // PointsB1(6)
-        // PointsB2(7)
-        // PointsC1(8)
-        // PointsC2(9)
-        // PointsH(10)
-        // Contributions(11)
 
         std::cout << "Make prover call" << std::endl;
 
@@ -139,23 +140,23 @@ struct UltraGrothProver {
             zkeyHeader->nPublic,
             zkeyHeader->domainSize,
             zkeyHeader->nCoefs,
-            zkey.getSectionData(10), // round indexes
+            zkey.getSectionData(10),   // round indexes
             zkeyHeader->num_indexes_c1,
-            zkey.getSectionData(11), // final round indexes
+            zkey.getSectionData(11),   // final round indexes
             zkeyHeader->num_indexes_c2,
             zkeyHeader->alpha1,
             zkeyHeader->beta1,
             zkeyHeader->beta2,
-            zkeyHeader->final_delta1,   // final delta 1
-            zkeyHeader->final_delta2,   // final delta 2
-            zkeyHeader->round_delta1,   // round delta 1
+            zkeyHeader->final_delta1,  // final delta 1
+            zkeyHeader->final_delta2,  // final delta 2
+            zkeyHeader->round_delta1,  // round delta 1
             zkey.getSectionData(4),    // Coefs
             zkey.getSectionData(5),    // pointsA
             zkey.getSectionData(6),    // pointsB1
             zkey.getSectionData(7),    // pointsB2
             zkey.getSectionData(9),    // final points C
             zkey.getSectionData(8),    // round points C
-            zkey.getSectionData(12)     // pointsH1
+            zkey.getSectionData(12)    // pointsH1
         );
     }
 };
@@ -179,7 +180,6 @@ ultra_groth_prover_create(
         std::cout << "Zkey reading" << std::endl;
         UltraGrothProver *prover = new UltraGrothProver(zkey_buffer, zkey_size);
         std::cout << "Zkey processed" << std::endl;
-
         *prover_object = prover;
 
     } catch (std::exception& e) {
@@ -206,30 +206,35 @@ ultra_groth_prover(
     char                *public_buffer,
     unsigned long long  *public_size,
     char                *error_msg,
-    unsigned long long   error_msg_maxsize)
-{
+    unsigned long long   error_msg_maxsize,
+    const uint8_t       *input_path,
+    const uint8_t       *sym_path
+) {
     void *prover = NULL;
 
     int error = ultra_groth_prover_create(
-                    &prover,
-                    zkey_buffer,
-                    zkey_size,
-                    error_msg,
-                    error_msg_maxsize);
+        &prover,
+        zkey_buffer,
+        zkey_size,
+        error_msg,
+        error_msg_maxsize
+    );
 
     if (error != PROVER_OK) {
         return error;
     }
 
     error = ultra_groth_prover_prove(
-                    prover,
-                    public_buffer,
-                    public_size,
-                    error_msg,
-                    error_msg_maxsize);
+        prover,
+        public_buffer,
+        public_size,
+        error_msg,
+        error_msg_maxsize,
+        input_path,
+        sym_path
+    );
 
     ultra_groth_prover_destroy(prover);
-
     return error;
 }
 
@@ -239,8 +244,10 @@ ultra_groth_prover_prove(
     char                *public_buffer,
     unsigned long long  *public_size,
     char                *error_msg,
-    unsigned long long   error_msg_maxsize)
-{
+    unsigned long long   error_msg_maxsize,
+    const uint8_t       *input_path,
+    const uint8_t       *sym_path
+) {
     try {
         if (prover_object == NULL) {
             throw std::invalid_argument("Null prover object");
@@ -257,13 +264,12 @@ ultra_groth_prover_prove(
         UltraGrothProver *prover = static_cast<UltraGrothProver*>(prover_object);
         std::string stringProof, stringPublic;
 
-        // TODO Create accumulatro
         uint8_t accumulator[32];
         std::memset(accumulator, 0, 32 * sizeof(uint8_t));
 
         std::cout << "Run prover" << std::endl;
 
-        auto proof = prover->prover->prove(accumulator);
+        auto proof = prover->prover->prove(accumulator, input_path, sym_path);
         auto jsonProof = proof->toJson();
         std::ofstream file("proof.json");
 
@@ -274,11 +280,7 @@ ultra_groth_prover_prove(
             std::cerr << "Failed to open file for writing.\n";
         }
 
-        // TODO Get wtns somehow
-        //stringPublic = BuildPublicString(wtnsData, prover->zkeyHeader->nPublic);
-        //std::strncpy(public_buffer, stringPublic.c_str(), *public_size);
-
-    } catch (std::exception& e) {
+    } catch (std::exception &e) {
         CopyError(error_msg, error_msg_maxsize, e.what());
         return PROVER_ERROR;
 

@@ -63,10 +63,10 @@ namespace UltraGroth {
     class Prover{
 
         Engine &E;
-        u_int32_t nVars;
-        u_int32_t nPublic;
-        u_int32_t domainSize;
-        u_int64_t nCoefs;
+        uint32_t nVars;
+        uint32_t nPublic;
+        uint32_t domainSize;
+        uint64_t nCoefs;
         // Indexes to extract witness elements for first round
         uint32_t *round_indexes;
         uint32_t round_indexes_count;
@@ -152,7 +152,7 @@ namespace UltraGroth {
         }
 
         // Function to execute entire proving process
-        std::unique_ptr<Proof<Engine>> prove(uint8_t *accumulator);
+        std::unique_ptr<Proof<Engine>> prove(uint8_t *accumulator, const uint8_t *input_path, const uint8_t *sym_path);
 
         // Function to execute common round of proving process
         // Pointer to accumulator is passed to function; accumulator size is 32
@@ -166,10 +166,10 @@ namespace UltraGroth {
 
     template <typename Engine>
     std::unique_ptr<Prover<Engine>> makeProver(
-        u_int32_t nVars, 
-        u_int32_t nPublic, 
-        u_int32_t domainSize,
-        u_int64_t nCoefs,
+        uint32_t nVars, 
+        uint32_t nPublic, 
+        uint32_t domainSize,
+        uint64_t nCoefs,
         void *round_indexes,
         uint32_t round_indexes_count,
         void *final_round_indexes,

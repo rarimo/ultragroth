@@ -1,12 +1,15 @@
-#include "random_generator.hpp"
-#include "logging.hpp"
-#include "misc.hpp"
-#include "rounds_extern.h"
 #include <sstream>
 #include <vector>
 #include <mutex>
 #include <tuple>
+#include <memory>
+
 #include <openssl/sha.h>
+
+#include "random_generator.hpp"
+#include "logging.hpp"
+#include "misc.hpp"
+#include "rounds_extern.h"
 
 
 namespace UltraGroth {
@@ -341,12 +344,15 @@ Prover<Engine>::execute_final_round(
 };
 
 template <typename Engine>
-std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
-
+std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
+    uint8_t *accumulator,
+    const uint8_t *input_path,
+    const uint8_t *sym_path
+) {
     // 1. Call round function from Rust code
     // Get from rust code uint64_t *wtns, uint32_t *wtns_indexes, uint32_t wtns_count
-    RoundOneOut out1 = round1();
-    uint64_t *wtns_digits = out1.witness_digits;
+    RoundOneOut *out1 = round1(input_path, sym_path);
+    uint64_t *wtns_digits = out1->witness_digits;
 
     // index in public input corresponding to derived challenge
     uint32_t challenge_index = 0;
@@ -369,7 +375,6 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
         tmp.v[2] = wtns_digits[index + 2];
         tmp.v[3] = wtns_digits[index + 3];
         round_wtns[i] = tmp;
-
     }
 
     std::cout << "Executre first round" << std::endl;
@@ -388,7 +393,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     round_random_factor = std::get<1>(round_result);
     delete[] round_wtns;
 
-    uint64_t *out2 = round2(out1, reinterpret_cast<uint64_t*>(challange));
+    uint64_t *out2 = round2(out1, reinterpret_cast<uint64_t*>(challange), sym_path);
 
     typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_indexes_count];
     typename Engine::FrElement *wtns = new typename Engine::FrElement[WITNESS_SIZE];
@@ -405,16 +410,15 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     }
 
     // Convert witness from uint64 to FrElement
-    for (int i = 0; i < final_round_indexes_count; i++){
-
+    for (int i = 0; i < final_round_indexes_count; i++) {
         uint32_t index = final_round_indexes[i];
         final_round_wtns[i] = wtns[index]; 
-        
     }
 
     std::cout << "Execute final round" << std::endl;
     // Pass converted start wtns
-    std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine> final_round_result = execute_final_round(
+    // std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
+    auto final_round_result = execute_final_round(
         wtns,
         final_round_wtns,
         round_random_factor
@@ -422,6 +426,9 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
     std::cout << "Final round done" << std::endl;
 
     delete[] final_round_wtns;
+    delete[] wtns;
+    // TODO recode this func
+    // free_vec(out2, 2);
 
     Proof<Engine> *p = new Proof<Engine>(Engine::engine);
     E.g1.copy(p->A, std::get<0>(final_round_result));
@@ -434,20 +441,19 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(uint8_t *accumulator) {
 
 
 template <typename Engine>
-std::string Proof<Engine>::toJsonStr() {
-
+std::string Proof<Engine>::toJsonStr()
+{
     std::ostringstream ss;
     ss << "{ \"pi_a\":[\"" << E.f1.toString(A.x) << "\",\"" << E.f1.toString(A.y) << "\",\"1\"], ";
     ss << " \"pi_b\": [[\"" << E.f1.toString(B.x.a) << "\",\"" << E.f1.toString(B.x.b) << "\"],[\"" << E.f1.toString(B.y.a) << "\",\"" << E.f1.toString(B.y.b) << "\"], [\"1\",\"0\"]], ";
     ss << " \"pi_c\": [\"" << E.f1.toString(final_commitment.x) << "\",\"" << E.f1.toString(final_commitment.y) << "\",\"1\"], ";
     ss << " \"protocol\":\"ultragroth\" }";
-        
     return ss.str();
 }
 
 template <typename Engine>
-json Proof<Engine>::toJson() {
-
+json Proof<Engine>::toJson()
+{
     json p;
 
     p["pi_a"] = {};
@@ -608,12 +614,14 @@ bool Verifier<Engine>::verify(Proof<Engine> &proof, InputsVector &inputs,
 }
 
 template <typename Engine>
-bool Verifier<Engine>::challenge_check(InputsVector &inputs, uint8_t *accumulator, typename Engine::G1PointAffine round_commitment, uint32_t challenge_index){
-
+bool Verifier<Engine>::challenge_check(InputsVector &inputs, uint8_t *accumulator, typename Engine::G1PointAffine round_commitment, uint32_t challenge_index)
+{
     uint8_t buffer[32 + 2 * 32];
     memcpy(buffer, accumulator, 32 * sizeof(uint8_t));
-    uint64_t points_bytes[8] = {round_commitment.x.v[0], round_commitment.x.v[1], round_commitment.x.v[2], round_commitment.x.v[3],
-                                round_commitment.y.v[0], round_commitment.y.v[1], round_commitment.y.v[2], round_commitment.y.v[3]};
+    uint64_t points_bytes[8] = {
+        round_commitment.x.v[0], round_commitment.x.v[1], round_commitment.x.v[2], round_commitment.x.v[3],
+        round_commitment.y.v[0], round_commitment.y.v[1], round_commitment.y.v[2], round_commitment.y.v[3]
+    };
     memcpy(buffer + 32, points_bytes, 8 * sizeof(uint64_t));
     SHA256(buffer, 32*3, accumulator);
 
@@ -624,16 +632,26 @@ bool Verifier<Engine>::challenge_check(InputsVector &inputs, uint8_t *accumulato
     SHA256(buffer, 4 + 32, challenge);
 
     typename Engine::Fr::Element input_challenge = inputs[challenge_index];
-    uint8_t* input_bytes = reinterpret_cast<uint8_t*>(new uint64_t[4] {input_challenge.v[0], input_challenge.v[1], input_challenge.v[2], input_challenge.v[3]});
+    uint8_t* input_bytes = reinterpret_cast<uint8_t*>(new uint64_t[4] {
+        input_challenge.v[0], input_challenge.v[1], input_challenge.v[2], input_challenge.v[3]
+    });
 
+    for (int i = 0; i < 32; ++i)
+        if (input_bytes[i] != challenge[i])
+            return false;
+    return true;
+    
+    // Old code, maybe work, maybe not
+    /*
     bool result = true;
     uint32_t i = 0;
-    while (i < 32 && result){
+    while (i < 32 && result) {
         result &= input_bytes[i] == challenge[i];
         ++i;
     }
 
     return result;
+    */
 }
 
 template <typename Engine>

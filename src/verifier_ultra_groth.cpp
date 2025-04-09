@@ -3,7 +3,7 @@
 #include <alt_bn128.hpp>
 #include <nlohmann/json.hpp>
 
-#include "verifier_ultra_groth.h"
+#include "verifier_ultra_groth.hpp"
 #include "ultra_groth.hpp"
 
 using json = nlohmann::json;

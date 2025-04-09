@@ -1,10 +1,6 @@
 #ifndef PROVER_ULTRA_GROTH_H
 #define PROVER_ULTRA_GROTH_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 int
 ultragroth_public_size_for_zkey_buf(
     const void          *zkey_buffer,
@@ -41,7 +37,9 @@ ultra_groth_prover_prove(
     char                *public_buffer,
     unsigned long long  *public_size,
     char                *error_msg,
-    unsigned long long   error_msg_maxsize);
+    unsigned long long   error_msg_maxsize,
+    const uint8_t       *input_path,
+    const uint8_t       *sym_path);
 
 /**
  * Destroys 'prover_object'.
@@ -63,10 +61,8 @@ ultra_groth_prover(
     char                *public_buffer,
     unsigned long long  *public_size,
     char                *error_msg,
-    unsigned long long   error_msg_maxsize);
-
-#ifdef __cplusplus
-}
-#endif
+    unsigned long long   error_msg_maxsize,
+    const uint8_t       *input_path,
+    const uint8_t       *sym_path);
 
 #endif // PROVER_ULTRA_GROTH_H

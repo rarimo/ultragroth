@@ -2,7 +2,7 @@
 #include <stdexcept>
 
 #include "fileloader.hpp"
-#include "verifier_ultra_groth.h"
+#include "verifier_ultra_groth.hpp"
 
 
 int main(int argc, char **argv)

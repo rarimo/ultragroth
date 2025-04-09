@@ -11,21 +11,18 @@
 #include <alt_bn128.hpp>
 
 #include "ultra_groth.hpp"
-#include "prover_ultra_groth.h"
+#include "prover_ultra_groth.hpp"
 #include "zkey_utils.hpp"
 #include "wtns_utils.hpp"
 #include "binfile_utils.hpp"
 #include "fileloader.hpp"
 
 
-int main(int argc, char **argv) {
-
-    std::cout << "Entry" << std::endl;
-
-    auto x = round1();
-    if (argc != 2) {
+int main(int argc, char **argv)
+{
+    if (argc != 4) {
         std::cerr << "Invalid number of parameters" << std::endl;
-        std::cerr << "Usage: prover <circuit.zkey>" << std::endl;
+        std::cerr << "Usage: prover <circuit.zkey> <input.json> <lookup.sym>" << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -43,7 +40,8 @@ int main(int argc, char **argv) {
             zkeyFile.dataSize(),
             &publicSize,
             errorMsg,
-            sizeof(errorMsg));
+            sizeof(errorMsg)
+        );
         
         if (error != PROVER_OK) {
             throw std::runtime_error(errorMsg);
@@ -57,7 +55,10 @@ int main(int argc, char **argv) {
             publicBuffer.data(),
             &publicSize,
             errorMsg,
-            sizeof(errorMsg));
+            sizeof(errorMsg),
+            reinterpret_cast<const uint8_t*>(argv[2]),
+            reinterpret_cast<const uint8_t*>(argv[3])
+        );
 
         if (error != PROVER_OK) {
             throw std::runtime_error(errorMsg);
