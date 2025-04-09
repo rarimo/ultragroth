@@ -162,6 +162,8 @@ namespace UltraGroth {
         // Function to execute final round of proving process
         std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
         execute_final_round(typename Engine::FrElement *wtns, typename Engine::FrElement *final_wtns, typename Engine::FrElement round_random_factor);
+
+        void debug_prover_inputs();
     };
 
     template <typename Engine>
