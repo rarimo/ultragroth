@@ -65,6 +65,40 @@ std::unique_ptr<Prover<Engine>> makeProver(
     return std::unique_ptr< Prover<Engine> >(p);
 }
 
+template <typename Engine> void Prover<Engine>::debug_prover_inputs(){
+
+    std::cout << std::endl;
+
+    std::cout << "nVars: " << nVars << std::endl;
+    std::cout << "nPublic: " << nPublic << std::endl;
+    std::cout << "domainSize: " << domainSize << std::endl;
+    std::cout << "nCoefs: " << nCoefs << std::endl;
+
+    std::string round_indexes_str = "";
+    for (int i = 0; i < round_indexes_count; i++){
+        round_indexes_str += "round_indexes[" + std::to_string(i) + "] = ";
+        round_indexes_str += std::to_string(round_indexes[i]);
+        round_indexes_str += "\r\n";
+    }
+    std::cout << "Round indexes count: " << round_indexes_count << std::endl;
+    std::cout << round_indexes_str << std::endl;
+
+    std::string final_round_indexes_str = "";
+    for (int i = 0; i < final_round_indexes_count; i++){
+        final_round_indexes_str += "final_round_indexes[" + std::to_string(i) + "] = ";
+        final_round_indexes_str += std::to_string(final_round_indexes[i]);
+        final_round_indexes_str += "\r\n";
+    }
+    std::cout << "Round indexes count: " << final_round_indexes_count << std::endl;
+    std::cout << final_round_indexes_str << std::endl;
+
+    std::cout << "vk_alpha1: " << Curve<RawFq>::toString(alpha1) << std::endl;
+
+
+    std::cout << std::endl;
+
+}
+
 template <typename Engine>
 std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement>
 Prover<Engine>::execute_round(

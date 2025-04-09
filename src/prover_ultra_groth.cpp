@@ -181,7 +181,6 @@ ultra_groth_prover_create(
         UltraGrothProver *prover = new UltraGrothProver(zkey_buffer, zkey_size);
         std::cout << "Zkey processed" << std::endl;
         *prover_object = prover;
-
     } catch (std::exception& e) {
         CopyError(error_msg, error_msg_maxsize, e.what());
         return PROVER_ERROR;
@@ -268,6 +267,7 @@ ultra_groth_prover_prove(
         std::memset(accumulator, 0, 32 * sizeof(uint8_t));
 
         std::cout << "Run prover" << std::endl;
+        prover->prover->debug_prover_inputs();
 
         auto proof = prover->prover->prove(accumulator, input_path, sym_path);
         auto jsonProof = proof->toJson();
