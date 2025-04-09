@@ -90,13 +90,11 @@ set(LIB_SOURCES
     logger.cpp
     fileloader.cpp
     fileloader.hpp
-    verifier_ultra_groth.cpp
-    verifier_ultra_groth.h
     rounds_extern.h
     ultra_groth_prover.cpp
     ultra_groth_prover.h
-    #verifier.cpp
-    #verifier.h
+    verifier_ultra_groth.cpp
+    verifier_ultra_groth.h
     ../depends/ffiasm/c/misc.cpp
     ../depends/ffiasm/c/naf.cpp
     ../depends/ffiasm/c/splitparstr.cpp
@@ -121,17 +119,12 @@ add_library(rapidsnarkStaticFrFq STATIC ${LIB_SOURCES} ${FQ_SOURCES} ${FR_SOURCE
 set_target_properties(rapidsnarkStaticFrFq PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(rapidsnarkStaticFrFq PROPERTIES OUTPUT_NAME rapidsnark-fr-fq)
 
-#add_executable(prover main_prover.cpp)
-#target_link_libraries(prover rapidsnarkStatic)
-
 find_package(OpenSSL REQUIRED)
-add_executable(ultra_groth main_ultra_groth.cpp)
+add_executable(ultra_groth_prover main_ultra_groth.cpp)
+target_link_libraries(ultra_groth_prover rapidsnarkStatic OpenSSL::Crypto ${BIONETTA_PROVER_LIB})
+
 add_executable(ultra_groth_verifier main_verifier_ultra_groth.cpp)
-
-target_link_libraries(ultra_groth rapidsnarkStatic OpenSSL::Crypto ${BIONETTA_PROVER_LIB})
-
-#add_executable(verifier main_verifier.cpp)
-#target_link_libraries(verifier rapidsnarkStatic)
+target_link_libraries(ultra_groth_verifier rapidsnarkStatic)
 
 add_library(rapidsnark SHARED ${LIB_SOURCES})
 
