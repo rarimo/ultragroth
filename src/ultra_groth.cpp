@@ -4,7 +4,7 @@
 #include <tuple>
 #include <memory>
 
-#include <openssl/sha.h>
+#include <openssl/evp.h>
 
 #include "random_generator.hpp"
 #include "logging.hpp"
@@ -13,6 +13,14 @@
 
 
 namespace UltraGroth {
+
+static void keccak256_hash(const uint8_t *buffer, const size_t len, uint8_t *out_hash) {
+    EVP_MD_CTX *ctx = EVP_MD_CTX_new();
+    EVP_DigestInit_ex(ctx, EVP_sha3_256(), nullptr);
+    EVP_DigestUpdate(ctx, buffer, len);
+    EVP_DigestFinal_ex(ctx, out_hash, nullptr);
+    EVP_MD_CTX_free(ctx);
+}
 
 template <typename Engine>
 std::unique_ptr<Prover<Engine>> makeProver(
@@ -196,7 +204,7 @@ Prover<Engine>::execute_round(
                                 commitment_projective.y.v[0], commitment_projective.y.v[1], commitment_projective.y.v[2], commitment_projective.y.v[3]};
     memcpy(buffer + 32, points_bytes, 8 * sizeof(uint64_t));
     
-    SHA256(buffer, 32*3, accumulator);
+    keccak256_hash(buffer, 32*3, accumulator);
     return {commitment, r};
 }
 
@@ -485,13 +493,13 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     
     memcpy(buffer, &challenge_index, sizeof(uint32_t));
     memcpy(buffer + 4, accumulator, 32 * sizeof(uint8_t));
-    SHA256(buffer, 4 + 32, challange);
+    keccak256_hash(buffer, 4 + 32, challange);
     
     round_commitment = std::get<0>(round_result);
     round_random_factor = std::get<1>(round_result);
     delete[] round_wtns;
 
-    uint64_t *out2 = round2(out1, reinterpret_cast<uint64_t*>(challange), sym_path);
+    round2(out1, reinterpret_cast<uint64_t*>(challange), sym_path);
 
     typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_indexes_count];
     typename Engine::FrElement *wtns = new typename Engine::FrElement[WITNESS_SIZE];
@@ -721,13 +729,13 @@ bool Verifier<Engine>::challenge_check(InputsVector &inputs, uint8_t *accumulato
         round_commitment.y.v[0], round_commitment.y.v[1], round_commitment.y.v[2], round_commitment.y.v[3]
     };
     memcpy(buffer + 32, points_bytes, 8 * sizeof(uint64_t));
-    SHA256(buffer, 32*3, accumulator);
+    keccak256_hash(buffer, 32*3, accumulator);
 
     uint8_t buffer1[4 + 32];
     uint8_t challenge[32];
     memcpy(buffer1, challenge_index, sizeof(uint32_t));
     memcpy(buffer1 + 4, accumulator, 32 * sizeof(uint8_t));
-    SHA256(buffer, 4 + 32, challenge);
+    keccak256_hash(buffer, 4 + 32, challenge);
 
     typename Engine::Fr::Element input_challenge = inputs[challenge_index];
     uint8_t* input_bytes = reinterpret_cast<uint8_t*>(new uint64_t[4] {
