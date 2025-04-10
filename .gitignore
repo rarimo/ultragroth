@@ -8,6 +8,7 @@ bionetta-prover/
 *.wtns
 
 prover_inputs.txt
+input_logs.txt
 
 # Logs
 logs
