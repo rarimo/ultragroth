@@ -739,6 +739,47 @@ bool Verifier<Engine>::verify(Proof<Engine> &proof, InputsVector &inputs,
 
     typename Engine::G2Point pRoundDelta;
     E.g2.copy(pRoundDelta, key.round_delta2);
+    
+    typename Engine::G1Point Alpha;
+    E.g1.copy(Alpha, key.alpha1);
+
+    typename Engine::G1PointAffine a;
+    typename Engine::G2PointAffine b;
+
+    typename Engine::F1Element ax;
+    typename Engine::F1Element ay;
+    E.f1.fromString(ax, "20491192805390485299153009773594534940189261866228447918068658471970481763042");
+    E.f1.fromString(ay, "9383485363053290200918347156157836566562967994039712273449902621266178545958");
+    
+    a.x = ax;
+    a.y = ay;
+
+    typename Engine::F1Element bx1;
+    typename Engine::F1Element by1;
+    typename Engine::F1Element bx2;
+    typename Engine::F1Element by2;
+    E.f1.fromString(bx1, "6375614351688725206403948262868962793625744043794305715222011528459656738731");
+    E.f1.fromString(by1, "4252822878758300859123897981450591353533073413197771768651442665752259397132");
+    E.f1.fromString(bx2, "10505242626370262277552901082094356697409835680220590971873171140371331206856");
+    E.f1.fromString(by2, "21847035105528745403288232691147584728191162732299865338377159692350059136679");
+
+    typename Engine::F2Element bx;
+    typename Engine::F2Element by;
+    bx.a = bx1;
+    bx.b = by1;
+    by.a = bx2;
+    by.b = by2;
+    
+    b.x = bx;
+    b.y = by;
+
+    typename Engine::G1Point aProj;
+    typename Engine::G2Point bProj;
+    E.g1.copy(aProj, a);
+    E.g2.copy(bProj, b);
+
+    typename Engine::F12Element alphabeta12 = pairing(aProj, bProj);
+    std::cout << E.f12.toString(alphabeta12) << std::endl;
 
     G1PointArray g1 = {pA, negAlpha, negvkX, negFinalCommit, negRoundCommit};
     G2PointArray g2 = {pB, pBeta, pGamma, pFinalDelta, pRoundDelta};
@@ -1091,6 +1132,15 @@ Verifier<Engine>::finalExponentiation(typename Engine::F12Element &in)
     E.f12.mul(t0, t0, t1);
 
     return t0;
+}
+
+// For debug purposes
+template <typename Engine>
+typename Engine::F12Element Verifier<Engine>::pairing(typename Engine::G1Point a, typename Engine::G2Point b){
+    
+    auto miller_res = miller(b, a);
+    return finalExponentiation(miller_res);
+
 }
 
 template <typename Engine>

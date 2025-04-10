@@ -109,14 +109,17 @@ ultragroth_public_size_for_zkey_buf(
 //[delta2]2
 
 // IC(3)
-// Coefs(4)
+// Coeffs(4)
 // PointsA(5)
 // PointsB1(6)
 // PointsB2(7)
 // PointsC1(8)
 // PointsC2(9)
-// PointsH(10)
-// Contributions(11)
+// IndexesC1(10)
+// IndexesC2(11)
+// PointsH(12)
+// Contributions(13)
+
 struct UltraGrothProver {
     BinFileUtils::BinFile zkey;
     std::unique_ptr<ZKeyUtils::Header> zkeyHeader;
