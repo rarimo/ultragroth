@@ -3,8 +3,11 @@
 #include <mutex>
 #include <tuple>
 #include <memory>
+#include <gmp.h>
 
 #include <openssl/evp.h>
+#include <nlohmann/json.hpp>
+#include <fstream>
 
 #include "random_generator.hpp"
 #include "logging.hpp"
@@ -190,7 +193,7 @@ Prover<Engine>::execute_round(
     randombytes_buf((void *)&(r.v[0]), sizeof(r)-1);
     
     // Add blinding factor r_k
-    E.g1.mulByScalar(tmp, round_delta1, (uint8_t *)&r, sizeof(r));
+    E.g1.mulByScalar(tmp, final_delta1, (uint8_t *)&r, sizeof(r));
     E.g1.add(commitment_projective, commitment_projective, tmp);
 
     // Convert commitment back to affine
@@ -258,7 +261,6 @@ Prover<Engine>::execute_final_round(
             E.fr.copy(b[i], E.fr.zero());
         }
     });
-
 
     // Following code computes sum_k {h_k * Z_k}
     LOG_TRACE("Processing coefs");
@@ -476,10 +478,10 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     for (int i = 0; i < round_indexes_count; i++) {
         typename Engine::FrElement tmp; 
         uint32_t index = round_indexes[i] << 2;
-        tmp.v[0] = wtns_digits[index + 0];
-        tmp.v[1] = wtns_digits[index + 1];
-        tmp.v[2] = wtns_digits[index + 2];
-        tmp.v[3] = wtns_digits[index + 3];
+        mpz_t x;
+        mpz_init(x);
+        mpz_import(x, 4, -1, 8, -1, 0, &wtns_digits[index]);
+        E.fr.fromMpz(tmp, x);
         round_wtns[i] = tmp;
     }
 
@@ -499,6 +501,25 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     round_random_factor = std::get<1>(round_result);
     delete[] round_wtns;
 
+    typename Engine::FrElement rand;
+    mpz_t x;
+    mpz_init(x);
+    mpz_import(x, 4, -1, 8, -1, 0, reinterpret_cast<uint64_t*>(challange));
+    E.fr.fromMpz(rand, x);
+    
+    std::vector<std::string> tmp = {E.fr.toString(rand)};
+    std::cout << "Rand: " << tmp[0] << std::endl; 
+    json j = tmp;
+
+    // Write to file    
+    std::ofstream file("input_seheavy_verif.json");
+    if (file.is_open()) {
+        file << j.dump(); // pretty-print with 4 spaces indent
+        file.close();
+    } else {
+        std::cerr << "Error opening file\n";
+    }
+
     uint64_t *witness = round2(out1, reinterpret_cast<uint64_t*>(challange), sym_path);
     bts(witness);
 
@@ -509,10 +530,10 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     for (int i = 0; i < WITNESS_SIZE; i++) {
         typename Engine::FrElement tmp; 
         uint32_t index = i << 2;
-        tmp.v[0] = wtns_digits[index + 0];
-        tmp.v[1] = wtns_digits[index + 1];
-        tmp.v[2] = wtns_digits[index + 2];
-        tmp.v[3] = wtns_digits[index + 3];
+        mpz_t x;
+        mpz_init(x);
+        mpz_import(x, 4, -1, 8, -1, 0, &witness[index]);
+        E.fr.fromMpz(rand, x);
         wtns[i] = tmp;
     }
 
@@ -1083,7 +1104,7 @@ bool Verifier<Engine>::pairingCheck(G1PointArray& a, G2PointArray& b)
     }
 
     auto ret = finalExponentiation(acc);
-
+    
     return E.f12.isOne(ret);
 }
 
