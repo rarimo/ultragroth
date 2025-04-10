@@ -499,7 +499,8 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     round_random_factor = std::get<1>(round_result);
     delete[] round_wtns;
 
-    round2(out1, reinterpret_cast<uint64_t*>(challange), sym_path);
+    uint64_t *witness = round2(out1, reinterpret_cast<uint64_t*>(challange), sym_path);
+    bts(witness);
 
     typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_indexes_count];
     typename Engine::FrElement *wtns = new typename Engine::FrElement[WITNESS_SIZE];
