@@ -132,7 +132,7 @@ find_package(OpenSSL REQUIRED)
 add_executable(prover_ultra_groth main_prover_ultra_groth.cpp)
 target_link_libraries(prover_ultra_groth rapidsnarkStatic OpenSSL::Crypto ${BIONETTA_PROVER_LIB})
 
-add_executable(ultra_groth_verifier main_verifier_ultra_groth.cpp)
-target_link_libraries(ultra_groth_verifier rapidsnarkStatic)
+add_executable(verifier_ultra_groth main_verifier_ultra_groth.cpp)
+target_link_libraries(verifier_ultra_groth rapidsnarkStatic)
 
 add_library(rapidsnark SHARED ${LIB_SOURCES})

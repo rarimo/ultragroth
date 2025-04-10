@@ -7,7 +7,6 @@
 #define WITNESS_SIZE 69761
 #define LOOKUP_SIZE (1 << 10)
 
-
 typedef struct RoundOneOut {
   uint64_t *witness_digits;
   uint32_t *chunks;
@@ -21,7 +20,8 @@ extern "C" {
 struct RoundOneOut *round1(const uint8_t *input_file, const uint8_t *sym_file);
 uint64_t *round2(struct RoundOneOut *round1_out, uint64_t *rand_digits, const uint8_t *sym_file);
 void bts(uint64_t *witness);
-void free_vec(uint64_t *ptr, uintptr_t size);
+void free_witness(uint64_t *ptr);
+void free_RoundOneOut(struct RoundOneOut *ptr);
 
 #ifdef __cplusplus
 }

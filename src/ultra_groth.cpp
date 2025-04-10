@@ -1,4 +1,5 @@
 #include <sstream>
+#include <fstream>
 #include <vector>
 #include <mutex>
 #include <tuple>
@@ -9,10 +10,14 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 
+#include <nlohmann/json.hpp>
+
 #include "random_generator.hpp"
 #include "logging.hpp"
 #include "misc.hpp"
 #include "rounds_extern.h"
+
+using json = nlohmann::json;
 
 
 namespace UltraGroth {
@@ -475,7 +480,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     std::cout << "Casting round wtns" << std::endl;
 
     // Convert witness from uint64 to FrElement
-    for (int i = 0; i < round_indexes_count; i++) {
+    for (uint32_t i = 0; i < round_indexes_count; i++) {
         typename Engine::FrElement tmp; 
         uint32_t index = round_indexes[i] << 2;
         mpz_t x;
@@ -527,7 +532,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     typename Engine::FrElement *wtns = new typename Engine::FrElement[WITNESS_SIZE];
 
     // Convert witness from uint64 to FrElement
-    for (int i = 0; i < WITNESS_SIZE; i++) {
+    for (uint32_t i = 0; i < WITNESS_SIZE; i++) {
         typename Engine::FrElement tmp; 
         uint32_t index = i << 2;
         mpz_t x;
@@ -538,7 +543,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     }
 
     // Convert witness from uint64 to FrElement
-    for (int i = 0; i < final_round_indexes_count; i++) {
+    for (uint32_t i = 0; i < final_round_indexes_count; i++) {
         uint32_t index = final_round_indexes[i];
         final_round_wtns[i] = wtns[index]; 
     }
@@ -555,8 +560,8 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
 
     delete[] final_round_wtns;
     delete[] wtns;
-    // TODO recode this func
-    // free_vec(out2, 2);
+    free_witness(witness);
+    free_RoundOneOut(out1);
 
     Proof<Engine> *p = new Proof<Engine>(Engine::engine);
     E.g1.copy(p->A, std::get<0>(final_round_result));
@@ -911,8 +916,8 @@ void Verifier<Engine>::mulLine(
     typename Engine::F12Element& ret,
     typename Engine::F2Element& a,
     typename Engine::F2Element& b,
-    typename Engine::F2Element& c)
-{
+    typename Engine::F2Element& c
+) {
     typename Engine::F6Element a2, t3, t2;
     typename Engine::F2Element t;
 
@@ -940,7 +945,7 @@ void Verifier<Engine>::mulLine(
 
 template <typename Engine>
 typename Engine::F12Element
-Verifier<Engine>::miller(typename Engine::G2Point& q, typename Engine::G1Point& p)
+Verifier<Engine>::miller(typename Engine::G2Point &q, typename Engine::G1Point &p)
 {
 
     const int  sixuPlus2NAF[] =  {0, 0, 0, 1, 0, 1, 0, -1, 0, 0, 1, -1, 0, 0, 1, 0,
@@ -1029,7 +1034,7 @@ Verifier<Engine>::miller(typename Engine::G2Point& q, typename Engine::G1Point& 
 
 template <typename Engine>
 typename Engine::F12Element
-Verifier<Engine>::finalExponentiation(typename Engine::F12Element& in)
+Verifier<Engine>::finalExponentiation(typename Engine::F12Element &in)
 {
     typename Engine::F12Element t1, inv, t2, fp, fp2, fp3, fu, fu2, fu3, y3, fu2p, fu3p;
     typename Engine::F12Element y2, y0, y1, y4, y5, y6, t0;
@@ -1089,7 +1094,7 @@ Verifier<Engine>::finalExponentiation(typename Engine::F12Element& in)
 }
 
 template <typename Engine>
-bool Verifier<Engine>::pairingCheck(G1PointArray& a, G2PointArray& b)
+bool Verifier<Engine>::pairingCheck(G1PointArray &a, G2PointArray &b)
 {
     typename Engine::F12Element acc = E.f12.one();
 

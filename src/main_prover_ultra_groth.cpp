@@ -6,7 +6,6 @@
 #include <fstream>
 
 #include <gmp.h>
-#include <openssl/sha.h>
 
 #include <alt_bn128.hpp>
 
