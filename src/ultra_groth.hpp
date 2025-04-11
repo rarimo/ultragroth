@@ -60,7 +60,7 @@ namespace UltraGroth {
 #pragma pack(pop)
 
     template <typename Engine>
-    class Prover{
+    class Prover {
 
         Engine &E;
         uint32_t nVars;

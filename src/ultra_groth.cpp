@@ -13,7 +13,6 @@
 #include <nlohmann/json.hpp>
 
 #include "random_generator.hpp"
-#include "logging.hpp"
 #include "misc.hpp"
 #include "rounds_extern.h"
 
@@ -32,10 +31,10 @@ static void keccak256_hash(const uint8_t *buffer, const size_t len, uint8_t *out
 
 template <typename Engine>
 std::unique_ptr<Prover<Engine>> makeProver(
-    u_int32_t nVars,
-    u_int32_t nPublic,
-    u_int32_t domainSize,
-    u_int64_t nCoefs,
+    uint32_t nVars,
+    uint32_t nPublic,
+    uint32_t domainSize,
+    uint64_t nCoefs,
     void *round_indexes,
     uint32_t round_indexes_count,
     void *final_round_indexes,
@@ -426,9 +425,6 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     round_commitment = std::get<0>(round_result);
     round_random_factor = std::get<1>(round_result);
     delete[] round_wtns;
-
-    // TODO Need to divide by module
-    challenge[31] = 0;
 
     typename Engine::FrElement rand;
     mpz_t x;
