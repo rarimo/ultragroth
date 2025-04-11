@@ -278,7 +278,7 @@ ultra_groth_prover_prove(
         std::ofstream file("proof.json");
 
         if (file.is_open()) {
-            file << jsonProof.dump();
+            file << jsonProof.dump(4);
             file.close();
         } else {
             std::cerr << "Failed to open file for writing.\n";

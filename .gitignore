@@ -7,6 +7,8 @@ bionetta-prover/
 *.sym
 *.wtns
 *.identifier
+*.r1cs
+wtns.txt
 
 prover_inputs.txt
 input_logs.txt

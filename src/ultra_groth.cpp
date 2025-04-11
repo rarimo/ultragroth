@@ -194,9 +194,11 @@ Prover<Engine>::execute_round(
     
     typename Engine::FrElement r;
     typename Engine::G1Point tmp;
-    E.fr.copy(r, E.fr.zero());
-    randombytes_buf((void *)&(r.v[0]), sizeof(r)-1);
+    //E.fr.copy(r, E.fr.zero());
+    //randombytes_buf((void *)&(r.v[0]), sizeof(r)-1);
     
+    // Hardcode for debug purposes;
+    E.fr.fromString(r, "7");
     // Add blinding factor r_k
     E.g1.mulByScalar(tmp, final_delta1, (uint8_t *)&r, sizeof(r));
     E.g1.add(commitment_projective, commitment_projective, tmp);
@@ -225,6 +227,10 @@ Prover<Engine>::execute_final_round(
     typename Engine::FrElement round_random_factor
 ) {
     ThreadPool &threadPool = ThreadPool::defaultPool();
+
+    for (int i = 0; i < nVars; i++){
+        std::cout << "wtns[" << std::to_string(i) << "] = " << E.fr.toString(wtns[i]) << std::endl; 
+    }
 
     LOG_TRACE("Start Multiexp A");
     uint32_t sW = sizeof(wtns[0]);
@@ -390,6 +396,8 @@ Prover<Engine>::execute_final_round(
     ss1 << "pih: " << E.g1.toString(pih);
     LOG_DEBUG(ss1);
 
+    std::cout << "pih: " << E.g1.toString(pih) << std::endl;
+
     delete [] a;
 
     // initializing variables for blinding factors
@@ -397,11 +405,15 @@ Prover<Engine>::execute_final_round(
     typename Engine::FrElement s;
     typename Engine::FrElement rs;
 
-    E.fr.copy(r, E.fr.zero());
-    E.fr.copy(s, E.fr.zero());
+    //E.fr.copy(r, E.fr.zero());
+    //E.fr.copy(s, E.fr.zero());
+//
+    //randombytes_buf((void *)&(r.v[0]), sizeof(r)-1);
+    //randombytes_buf((void *)&(s.v[0]), sizeof(s)-1);\
 
-    randombytes_buf((void *)&(r.v[0]), sizeof(r)-1);
-    randombytes_buf((void *)&(s.v[0]), sizeof(s)-1);
+    // Hardcode for debug purposes; change later
+    E.fr.fromString(r, "13");
+    E.fr.fromString(s, "17");
 
     // tmp variables for storing products
     typename Engine::G1Point p1;
@@ -477,18 +489,25 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     // here cloning of appropriate part of witness for first round should happen
     typename Engine::FrElement *round_wtns = new typename Engine::FrElement[round_indexes_count];
 
+    // Probably change way to load elements for first round later
+    typename Engine::FrElement *wtns_first = (typename Engine::FrElement *)wtns_digits;
+
     std::cout << "Casting round wtns" << std::endl;
 
-    // Convert witness from uint64 to FrElement
     for (uint32_t i = 0; i < round_indexes_count; i++) {
-        typename Engine::FrElement tmp; 
-        uint32_t index = round_indexes[i] << 2;
-        mpz_t x;
-        mpz_init(x);
-        mpz_import(x, 4, -1, 8, -1, 0, &wtns_digits[index]);
-        E.fr.fromMpz(tmp, x);
-        round_wtns[i] = tmp;
+        round_wtns[i] = wtns_first[round_indexes[i]];
     }
+
+    // Convert witness from uint64 to FrElement
+    //for (uint32_t i = 0; i < round_indexes_count; i++) {
+    //    typename Engine::FrElement tmp; 
+    //    uint32_t index = round_indexes[i] << 2;
+    //    mpz_t x;
+    //    mpz_init(x);
+    //    mpz_import(x, 4, -1, 8, -1, 0, &wtns_digits[index]);
+    //    E.fr.fromMpz(tmp, x);
+    //    round_wtns[i] = tmp;
+    //}
 
     std::cout << "Executre first round" << std::endl;
     std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement> round_result = execute_round(round_wtns, round_indexes_count, accumulator);
@@ -517,30 +536,33 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     json j = tmp;
 
     // Write to file    
-    std::ofstream file("input_seheavy_verif.json");
-    if (file.is_open()) {
-        file << j.dump(); // pretty-print with 4 spaces indent
-        file.close();
-    } else {
-        std::cerr << "Error opening file\n";
-    }
+    //std::ofstream file("input_seheavy_verif.json");
+    //if (file.is_open()) {
+    //    file << j.dump(); // pretty-print with 4 spaces indent
+    //    file.close();
+    //} else {
+    //    std::cerr << "Error opening file\n";
+    //}
 
-    uint64_t *witness = round2(out1, reinterpret_cast<uint64_t*>(challange), sym_path);
+    uint64_t hardcoded_random[4] = {123, 0, 0, 0};
+    //uint64_t *witness = round2(out1, reinterpret_cast<uint64_t*>(challange), sym_path);
+    uint64_t *witness = round2(out1, hardcoded_random, sym_path);
     bts(witness);
 
     typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_indexes_count];
-    typename Engine::FrElement *wtns = new typename Engine::FrElement[WITNESS_SIZE];
-
-    // Convert witness from uint64 to FrElement
-    for (uint32_t i = 0; i < WITNESS_SIZE; i++) {
-        typename Engine::FrElement tmp; 
-        uint32_t index = i << 2;
-        mpz_t x;
-        mpz_init(x);
-        mpz_import(x, 4, -1, 8, -1, 0, &witness[index]);
-        E.fr.fromMpz(tmp, x);
-        wtns[i] = tmp;
-    }
+    typename Engine::FrElement *wtns = (typename Engine::FrElement *)witness;
+    //typename Engine::FrElement *wtns = new typename Engine::FrElement[WITNESS_SIZE];
+//
+    //// Convert witness from uint64 to FrElement
+    //for (uint32_t i = 0; i < WITNESS_SIZE; i++) {
+    //    typename Engine::FrElement tmp; 
+    //    uint32_t index = i << 2;
+    //    mpz_t x;
+    //    mpz_init(x);
+    //    mpz_import(x, 4, -1, 8, -1, 0, &witness[index]);
+    //    E.fr.fromMpz(tmp, x);
+    //    wtns[i] = tmp;
+    //}
 
     // Convert witness from uint64 to FrElement
     for (uint32_t i = 0; i < final_round_indexes_count; i++) {
@@ -740,46 +762,12 @@ bool Verifier<Engine>::verify(Proof<Engine> &proof, InputsVector &inputs,
     typename Engine::G2Point pRoundDelta;
     E.g2.copy(pRoundDelta, key.round_delta2);
     
-    typename Engine::G1Point Alpha;
-    E.g1.copy(Alpha, key.alpha1);
-
-    typename Engine::G1PointAffine a;
-    typename Engine::G2PointAffine b;
-
-    typename Engine::F1Element ax;
-    typename Engine::F1Element ay;
-    E.f1.fromString(ax, "20491192805390485299153009773594534940189261866228447918068658471970481763042");
-    E.f1.fromString(ay, "9383485363053290200918347156157836566562967994039712273449902621266178545958");
-    
-    a.x = ax;
-    a.y = ay;
-
-    typename Engine::F1Element bx1;
-    typename Engine::F1Element by1;
-    typename Engine::F1Element bx2;
-    typename Engine::F1Element by2;
-    E.f1.fromString(bx1, "6375614351688725206403948262868962793625744043794305715222011528459656738731");
-    E.f1.fromString(by1, "4252822878758300859123897981450591353533073413197771768651442665752259397132");
-    E.f1.fromString(bx2, "10505242626370262277552901082094356697409835680220590971873171140371331206856");
-    E.f1.fromString(by2, "21847035105528745403288232691147584728191162732299865338377159692350059136679");
-
-    typename Engine::F2Element bx;
-    typename Engine::F2Element by;
-    bx.a = bx1;
-    bx.b = by1;
-    by.a = bx2;
-    by.b = by2;
-    
-    b.x = bx;
-    b.y = by;
-
-    typename Engine::G1Point aProj;
-    typename Engine::G2Point bProj;
-    E.g1.copy(aProj, a);
-    E.g2.copy(bProj, b);
-
-    typename Engine::F12Element alphabeta12 = pairing(aProj, bProj);
-    std::cout << E.f12.toString(alphabeta12) << std::endl;
+    //std::cout << "pA: " << E.g1.toString(pA) << std::endl;
+    //std::cout << "pB: " << E.g2.toString(pB) << std::endl;
+    //std::cout << "negvkX: " << E.g1.toString(negvkX) << std::endl;
+    //std::cout << "pGamma: " << E.g2.toString(pGamma) << std::endl;
+    //std::cout << "negAlpha: " << E.g1.toString(negAlpha) << std::endl;
+    //std::cout << "pBeta: " << E.g2.toString(pBeta) << std::endl;
 
     G1PointArray g1 = {pA, negAlpha, negvkX, negFinalCommit, negRoundCommit};
     G2PointArray g2 = {pB, pBeta, pGamma, pFinalDelta, pRoundDelta};
