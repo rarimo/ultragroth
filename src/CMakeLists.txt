@@ -127,13 +127,6 @@ add_library(rapidsnarkStaticFrFq STATIC ${LIB_SOURCES} ${FQ_SOURCES} ${FR_SOURCE
 set_target_properties(rapidsnarkStaticFrFq PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(rapidsnarkStaticFrFq PROPERTIES OUTPUT_NAME rapidsnark-fr-fq)
 
-if (APPLE)
-    message(STATUS "Find OpenSSL lib for macOS")
-
-    set(OPENSSL_ROOT_DIR "/opt/homebrew/opt/openssl")
-    set(OPENSSL_INCLUDE_DIR "${OPENSSL_ROOT_DIR}/include")
-    set(OPENSSL_LIBRARIES "${OPENSSL_ROOT_DIR}/lib")
-endif()
 
 find_package(OpenSSL REQUIRED)
 add_executable(prover_ultra_groth main_prover_ultra_groth.cpp)
