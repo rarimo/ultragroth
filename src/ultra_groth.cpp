@@ -462,13 +462,14 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     const uint8_t *input_path,
     const uint8_t *sym_path
 ) {
+
     // 1. Call round function from Rust code
     // Get from rust code uint64_t *wtns, uint32_t *wtns_indexes, uint32_t wtns_count
     RoundOneOut *out1 = round1(input_path, sym_path);
     uint64_t *wtns_digits = out1->witness_digits;
 
     // index in public input corresponding to derived challenge
-    uint32_t challenge_index = 0;
+    uint32_t challenge_index = 1;
     
     // initialization
     typename Engine::FrElement round_random_factor;
@@ -507,6 +508,8 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     mpz_init(x);
     mpz_import(x, 4, -1, 8, -1, 0, reinterpret_cast<uint64_t*>(challenge));
     E.fr.fromMpz(rand, x);
+    E.fr.toMpz(x, rand);
+    mpz_export(challenge, 0, -1, 8, -1, 0, x);
     
     std::vector<std::string> tmp = {E.fr.toString(rand)};
     std::cout << "Rand: " << tmp[0] << std::endl; 
@@ -515,7 +518,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     //Write to file    
     std::ofstream file("input_seheavy_verifier.json");
     if (file.is_open()) {
-        file << j.dump(); // pretty-print with 4 spaces indent
+        file << j.dump();
         file.close();
     } else {
         std::cerr << "Error opening file\n";
