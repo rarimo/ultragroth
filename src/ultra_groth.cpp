@@ -194,11 +194,9 @@ Prover<Engine>::execute_round(
     
     typename Engine::FrElement r;
     typename Engine::G1Point tmp;
-    //E.fr.copy(r, E.fr.zero());
-    //randombytes_buf((void *)&(r.v[0]), sizeof(r)-1);
+    E.fr.copy(r, E.fr.zero());
+    randombytes_buf((void *)&(r.v[0]), sizeof(r)-1);
     
-    // Hardcode for debug purposes;
-    E.fr.fromString(r, "7");
     // Add blinding factor r_k
     E.g1.mulByScalar(tmp, final_delta1, (uint8_t *)&r, sizeof(r));
     E.g1.add(commitment_projective, commitment_projective, tmp);
@@ -227,10 +225,6 @@ Prover<Engine>::execute_final_round(
     typename Engine::FrElement round_random_factor
 ) {
     ThreadPool &threadPool = ThreadPool::defaultPool();
-
-    for (int i = 0; i < nVars; i++){
-        std::cout << "wtns[" << std::to_string(i) << "] = " << E.fr.toString(wtns[i]) << std::endl; 
-    }
 
     LOG_TRACE("Start Multiexp A");
     uint32_t sW = sizeof(wtns[0]);
@@ -395,9 +389,7 @@ Prover<Engine>::execute_final_round(
     std::ostringstream ss1;
     ss1 << "pih: " << E.g1.toString(pih);
     LOG_DEBUG(ss1);
-
-    std::cout << "pih: " << E.g1.toString(pih) << std::endl;
-
+    
     delete [] a;
 
     // initializing variables for blinding factors
@@ -405,15 +397,11 @@ Prover<Engine>::execute_final_round(
     typename Engine::FrElement s;
     typename Engine::FrElement rs;
 
-    //E.fr.copy(r, E.fr.zero());
-    //E.fr.copy(s, E.fr.zero());
-//
-    //randombytes_buf((void *)&(r.v[0]), sizeof(r)-1);
-    //randombytes_buf((void *)&(s.v[0]), sizeof(s)-1);\
+    E.fr.copy(r, E.fr.zero());
+    E.fr.copy(s, E.fr.zero());
 
-    // Hardcode for debug purposes; change later
-    E.fr.fromString(r, "13");
-    E.fr.fromString(s, "17");
+    randombytes_buf((void *)&(r.v[0]), sizeof(r)-1);
+    randombytes_buf((void *)&(s.v[0]), sizeof(s)-1);\
 
     // tmp variables for storing products
     typename Engine::G1Point p1;
@@ -498,28 +486,17 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
         round_wtns[i] = wtns_first[round_indexes[i]];
     }
 
-    // Convert witness from uint64 to FrElement
-    //for (uint32_t i = 0; i < round_indexes_count; i++) {
-    //    typename Engine::FrElement tmp; 
-    //    uint32_t index = round_indexes[i] << 2;
-    //    mpz_t x;
-    //    mpz_init(x);
-    //    mpz_import(x, 4, -1, 8, -1, 0, &wtns_digits[index]);
-    //    E.fr.fromMpz(tmp, x);
-    //    round_wtns[i] = tmp;
-    //}
-
     std::cout << "Executre first round" << std::endl;
     std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement> round_result = execute_round(round_wtns, round_indexes_count, accumulator);
     std::cout << "First round done" << std::endl;
 
     // buffer to hash challenge index + accumulator
     uint8_t buffer[4 + 32];
-    uint8_t challange[32];
+    uint8_t challenge[32];
     
     memcpy(buffer, &challenge_index, sizeof(uint32_t));
     memcpy(buffer + 4, accumulator, 32 * sizeof(uint8_t));
-    keccak256_hash(buffer, 4 + 32, challange);
+    keccak256_hash(buffer, 4 + 32, challenge);
     
     round_commitment = std::get<0>(round_result);
     round_random_factor = std::get<1>(round_result);
@@ -528,41 +505,27 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     typename Engine::FrElement rand;
     mpz_t x;
     mpz_init(x);
-    mpz_import(x, 4, -1, 8, -1, 0, reinterpret_cast<uint64_t*>(challange));
+    mpz_import(x, 4, -1, 8, -1, 0, reinterpret_cast<uint64_t*>(challenge));
     E.fr.fromMpz(rand, x);
     
     std::vector<std::string> tmp = {E.fr.toString(rand)};
     std::cout << "Rand: " << tmp[0] << std::endl; 
     json j = tmp;
 
-    // Write to file    
-    //std::ofstream file("input_seheavy_verif.json");
-    //if (file.is_open()) {
-    //    file << j.dump(); // pretty-print with 4 spaces indent
-    //    file.close();
-    //} else {
-    //    std::cerr << "Error opening file\n";
-    //}
+    //Write to file    
+    std::ofstream file("input_seheavy_verif.json");
+    if (file.is_open()) {
+        file << j.dump(); // pretty-print with 4 spaces indent
+        file.close();
+    } else {
+        std::cerr << "Error opening file\n";
+    }
 
-    uint64_t hardcoded_random[4] = {123, 0, 0, 0};
-    //uint64_t *witness = round2(out1, reinterpret_cast<uint64_t*>(challange), sym_path);
-    uint64_t *witness = round2(out1, hardcoded_random, sym_path);
+    uint64_t *witness = round2(out1, reinterpret_cast<uint64_t*>(challenge), sym_path);
     bts(witness);
 
     typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_indexes_count];
     typename Engine::FrElement *wtns = (typename Engine::FrElement *)witness;
-    //typename Engine::FrElement *wtns = new typename Engine::FrElement[WITNESS_SIZE];
-//
-    //// Convert witness from uint64 to FrElement
-    //for (uint32_t i = 0; i < WITNESS_SIZE; i++) {
-    //    typename Engine::FrElement tmp; 
-    //    uint32_t index = i << 2;
-    //    mpz_t x;
-    //    mpz_init(x);
-    //    mpz_import(x, 4, -1, 8, -1, 0, &witness[index]);
-    //    E.fr.fromMpz(tmp, x);
-    //    wtns[i] = tmp;
-    //}
 
     // Convert witness from uint64 to FrElement
     for (uint32_t i = 0; i < final_round_indexes_count; i++) {
@@ -582,8 +545,8 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
 
     delete[] final_round_wtns;
     delete[] wtns;
-    free_witness(witness);
-    free_RoundOneOut(out1);
+    //free_witness(witness);
+    //free_RoundOneOut(out1);
 
     Proof<Engine> *p = new Proof<Engine>(Engine::engine);
     E.g1.copy(p->A, std::get<0>(final_round_result));
@@ -761,13 +724,6 @@ bool Verifier<Engine>::verify(Proof<Engine> &proof, InputsVector &inputs,
 
     typename Engine::G2Point pRoundDelta;
     E.g2.copy(pRoundDelta, key.round_delta2);
-    
-    //std::cout << "pA: " << E.g1.toString(pA) << std::endl;
-    //std::cout << "pB: " << E.g2.toString(pB) << std::endl;
-    //std::cout << "negvkX: " << E.g1.toString(negvkX) << std::endl;
-    //std::cout << "pGamma: " << E.g2.toString(pGamma) << std::endl;
-    //std::cout << "negAlpha: " << E.g1.toString(negAlpha) << std::endl;
-    //std::cout << "pBeta: " << E.g2.toString(pBeta) << std::endl;
 
     G1PointArray g1 = {pA, negAlpha, negvkX, negFinalCommit, negRoundCommit};
     G2PointArray g2 = {pB, pBeta, pGamma, pFinalDelta, pRoundDelta};
@@ -802,18 +758,6 @@ bool Verifier<Engine>::challenge_check(InputsVector &inputs, uint8_t *accumulato
         if (input_bytes[i] != challenge[i])
             return false;
     return true;
-    
-    // Old code, maybe work, maybe not
-    /*
-    bool result = true;
-    uint32_t i = 0;
-    while (i < 32 && result) {
-        result &= input_bytes[i] == challenge[i];
-        ++i;
-    }
-
-    return result;
-    */
 }
 
 template <typename Engine>
