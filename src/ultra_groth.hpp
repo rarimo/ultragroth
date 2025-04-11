@@ -212,6 +212,8 @@ namespace UltraGroth {
 
     private:
 
+        typename Engine::F12Element pairing(typename Engine::G1Point a, typename Engine::G2Point b);
+
         bool challenge_check(InputsVector &inputs, uint8_t *accumulator, typename Engine::G1PointAffine round_commitment, uint32_t challenge_index);
 
         bool pairingCheck(G1PointArray& g1, G2PointArray& g2);
