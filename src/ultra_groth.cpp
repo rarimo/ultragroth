@@ -538,7 +538,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
         mpz_t x;
         mpz_init(x);
         mpz_import(x, 4, -1, 8, -1, 0, &witness[index]);
-        E.fr.fromMpz(rand, x);
+        E.fr.fromMpz(tmp, x);
         wtns[i] = tmp;
     }
 
@@ -801,7 +801,7 @@ bool Verifier<Engine>::challenge_check(InputsVector &inputs, uint8_t *accumulato
 
     uint8_t buffer1[4 + 32];
     uint8_t challenge[32];
-    memcpy(buffer1, challenge_index, sizeof(uint32_t));
+    memcpy(buffer1, &challenge_index, sizeof(uint32_t));
     memcpy(buffer1 + 4, accumulator, 32 * sizeof(uint8_t));
     keccak256_hash(buffer, 4 + 32, challenge);
 
