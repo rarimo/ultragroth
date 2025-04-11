@@ -15,11 +15,9 @@ if(UNIX AND NOT APPLE)
     # Linux
     set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/bionetta-prover/target/x86_64-unknown-linux-gnu/release/libwitness_generator.a)
 
-# TODO Not specify for now
-#elseif(APPLE)
-    # macOS
+elseif(APPLE)
+    set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/bionetta-prover/target/x86_64-apple-darwin/release/libwitness_generator.a)
     
-    #set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/bionetta-prover/target/x86_64-unknown-linux-gnu/release/libwitness_generator.a)
 else()
     # Other (e.g., Windows)
     set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/bionetta-prover/target/release/libwitness_generator.a)
