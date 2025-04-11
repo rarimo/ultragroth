@@ -81,8 +81,8 @@ std::unique_ptr<Prover<Engine>> makeProver(
     return std::unique_ptr< Prover<Engine> >(p);
 }
 
-template <typename Engine> void Prover<Engine>::debug_prover_inputs(){
-
+template <typename Engine> void Prover<Engine>::debug_prover_inputs()
+{
     std::cout << std::endl;
 
     std::cout << "nVars: " << nVars << std::endl;
@@ -91,7 +91,7 @@ template <typename Engine> void Prover<Engine>::debug_prover_inputs(){
     std::cout << "nCoefs: " << nCoefs << std::endl;
 
     std::string round_indexes_str = "";
-    for (int i = 0; i < round_indexes_count; i++){
+    for (int i = 0; i < round_indexes_count; i++) {
         round_indexes_str += "round_indexes[" + std::to_string(i) + "] = ";
         round_indexes_str += std::to_string(round_indexes[i]);
         round_indexes_str += "\r\n";
@@ -100,7 +100,7 @@ template <typename Engine> void Prover<Engine>::debug_prover_inputs(){
     std::cout << round_indexes_str << std::endl;
 
     std::string final_round_indexes_str = "";
-    for (int i = 0; i < final_round_indexes_count; i++){
+    for (int i = 0; i < final_round_indexes_count; i++) {
         final_round_indexes_str += "final_round_indexes[" + std::to_string(i) + "] = ";
         final_round_indexes_str += std::to_string(final_round_indexes[i]);
         final_round_indexes_str += "\r\n";
@@ -119,7 +119,7 @@ template <typename Engine> void Prover<Engine>::debug_prover_inputs(){
 
     std::cout << "Points A: " << std::endl;
     std::string pointsA_str = "";
-    for (int i = 0; i < nVars; i++){
+    for (int i = 0; i < nVars; i++) {
         pointsA_str += "pointsA[" + std::to_string(i) + "] = ";
         pointsA_str += E.g1.toString(pointsA[i]);
         pointsA_str += "\r\n";
@@ -128,7 +128,7 @@ template <typename Engine> void Prover<Engine>::debug_prover_inputs(){
 
     std::cout << "Points B1: " << std::endl;
     std::string pointsB1_str = "";
-    for (int i = 0; i < nVars; i++){
+    for (int i = 0; i < nVars; i++) {
         pointsB1_str += "pointsB1[" + std::to_string(i) + "] = ";
         pointsB1_str += E.g1.toString(pointsB1[i]);
         pointsB1_str += "\r\n";
@@ -138,7 +138,7 @@ template <typename Engine> void Prover<Engine>::debug_prover_inputs(){
 
     std::cout << "Points B2: " << std::endl;
     std::string pointsB2_str = "";
-    for (int i = 0; i < nVars; i++){
+    for (int i = 0; i < nVars; i++) {
         pointsB2_str += "pointsB2[" + std::to_string(i) + "] = ";
         pointsB2_str += E.g2.toString(pointsB2[i]);
         pointsB2_str += "\r\n";
@@ -147,7 +147,7 @@ template <typename Engine> void Prover<Engine>::debug_prover_inputs(){
 
     std::cout << "Round points C1: " << std::endl;
     std::string round_points_str = "";
-    for (int i = 0; i < round_indexes_count; i++){
+    for (int i = 0; i < round_indexes_count; i++) {
         round_points_str += "round_pointsC[" + std::to_string(i) + "] = ";
         round_points_str += E.g1.toString(round_pointsC[i]);
         round_points_str += "\r\n";
@@ -156,7 +156,7 @@ template <typename Engine> void Prover<Engine>::debug_prover_inputs(){
 
     std::cout << "Final points C1: " << std::endl;
     std::string final_round_points_str = "";
-    for (int i = 0; i < final_round_indexes_count; i++){
+    for (int i = 0; i < final_round_indexes_count; i++) {
         final_round_points_str += "final_pointsC[" + std::to_string(i) + "] = ";
         final_round_points_str += E.g1.toString(final_pointsC[i]);
         final_round_points_str += "\r\n";
@@ -167,16 +167,13 @@ template <typename Engine> void Prover<Engine>::debug_prover_inputs(){
 
     std::cout << "Points A final round: " << std::endl;
     std::string final_round_pointsA_str = "";
-    for (int i = 0; i < final_round_indexes_count; i++){
+    for (int i = 0; i < final_round_indexes_count; i++) {
         final_round_pointsA_str += "final_pointsA[" + std::to_string(i) + "] = ";
         final_round_pointsA_str += E.g1.toString(pointsA[final_round_indexes[i]]);
         final_round_pointsA_str += E.g1.toString(pointsB1[final_round_indexes[i]]);
         final_round_pointsA_str += "\r\n";
     }
-    std::cout << final_round_pointsA_str << std::endl;
-
-    std::cout << std::endl;
-
+    std::cout << final_round_pointsA_str << std::endl << std::endl;
 }
 
 template <typename Engine>
@@ -184,13 +181,9 @@ std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement>
 Prover<Engine>::execute_round(
     const typename Engine::FrElement *round_wtns, const uint64_t wtns_count, uint8_t *accumulator
 ) {
-    LOG_TRACE("Start Multiexp round commitments");
     uint32_t sW = sizeof(round_wtns[0]);
     typename Engine::G1Point commitment_projective;
     E.g1.multiMulByScalarMSM(commitment_projective, round_pointsC, (uint8_t *)round_wtns, sW, wtns_count);
-    std::ostringstream ss2;
-    ss2 << "commitment: " << E.g1.toString(commitment_projective);
-    LOG_DEBUG(ss2);
     
     typename Engine::FrElement r;
     typename Engine::G1Point tmp;
@@ -208,8 +201,10 @@ Prover<Engine>::execute_round(
     // Load x and y coordinates of commitment to buffer
     uint8_t buffer[32 + 2 * 32];
     memcpy(buffer, accumulator, 32 * sizeof(uint8_t));
-    uint64_t points_bytes[8] = {commitment_projective.x.v[0], commitment_projective.x.v[1], commitment_projective.x.v[2], commitment_projective.x.v[3],
-                                commitment_projective.y.v[0], commitment_projective.y.v[1], commitment_projective.y.v[2], commitment_projective.y.v[3]};
+    uint64_t points_bytes[8] = {
+        commitment_projective.x.v[0], commitment_projective.x.v[1], commitment_projective.x.v[2], commitment_projective.x.v[3],
+        commitment_projective.y.v[0], commitment_projective.y.v[1], commitment_projective.y.v[2], commitment_projective.y.v[3]
+    };
     memcpy(buffer + 32, points_bytes, 8 * sizeof(uint64_t));
     
     keccak256_hash(buffer, 32*3, accumulator);
@@ -226,36 +221,19 @@ Prover<Engine>::execute_final_round(
 ) {
     ThreadPool &threadPool = ThreadPool::defaultPool();
 
-    LOG_TRACE("Start Multiexp A");
     uint32_t sW = sizeof(wtns[0]);
     typename Engine::G1Point pi_a;
     E.g1.multiMulByScalarMSM(pi_a, pointsA, (uint8_t *)wtns, sW, nVars);
-    std::ostringstream ss2;
-    ss2 << "pi_a: " << E.g1.toString(pi_a);
-    LOG_DEBUG(ss2);
 
-    LOG_TRACE("Start Multiexp B1");
     typename Engine::G1Point pib1;
     E.g1.multiMulByScalarMSM(pib1, pointsB1, (uint8_t *)wtns, sW, nVars);
-    std::ostringstream ss3;
-    ss3 << "pib1: " << E.g1.toString(pib1);
-    LOG_DEBUG(ss3);
 
-    LOG_TRACE("Start Multiexp B2");
     typename Engine::G2Point pi_b;
     E.g2.multiMulByScalarMSM(pi_b, pointsB2, (uint8_t *)wtns, sW, nVars);
-    std::ostringstream ss4;
-    ss4 << "pi_b: " << E.g2.toString(pi_b);
-    LOG_DEBUG(ss4);
 
-    LOG_TRACE("Start Multiexp C");
     typename Engine::G1Point pi_c;
     E.g1.multiMulByScalarMSM(pi_c, final_pointsC, (uint8_t *)final_wtns, sW, final_round_indexes_count);
-    std::ostringstream ss5;
-    ss5 << "pi_c: " << E.g1.toString(pi_c);
-    LOG_DEBUG(ss5);
 
-    LOG_TRACE("Start Initializing a b c A");
     auto a = new typename Engine::FrElement[domainSize];
     auto b = new typename Engine::FrElement[domainSize];
     auto c = new typename Engine::FrElement[domainSize];
@@ -268,8 +246,6 @@ Prover<Engine>::execute_final_round(
     });
 
     // Following code computes sum_k {h_k * Z_k}
-    LOG_TRACE("Processing coefs");
-
     #define NLOCKS 1024
     std::vector<std::mutex> locks(NLOCKS);
 
@@ -293,7 +269,6 @@ Prover<Engine>::execute_final_round(
             );
         }
     });
-    LOG_TRACE("Calculating c");
     threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
         for (uint64_t i=begin; i<end; i++) {
             E.fr.mul(
@@ -304,71 +279,28 @@ Prover<Engine>::execute_final_round(
         }
     });
 
-    LOG_TRACE("Initializing fft");
     uint32_t domainPower = fft->log2(domainSize);
-
-    LOG_TRACE("Start iFFT A");
     fft->ifft(a, domainSize);
-    LOG_TRACE("a After ifft:");
-    LOG_DEBUG(E.fr.toString(a[0]).c_str());
-    LOG_DEBUG(E.fr.toString(a[1]).c_str());
-    LOG_TRACE("Start Shift A");
-
     threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
         for (uint64_t i=begin; i<end; i++) {
             E.fr.mul(a[i], a[i], fft->root(domainPower+1, i));
         }
     });
-
-    LOG_TRACE("a After shift:");
-    LOG_DEBUG(E.fr.toString(a[0]).c_str());
-    LOG_DEBUG(E.fr.toString(a[1]).c_str());
-    LOG_TRACE("Start FFT A");
     fft->fft(a, domainSize);
-    LOG_TRACE("a After fft:");
-    LOG_DEBUG(E.fr.toString(a[0]).c_str());
-    LOG_DEBUG(E.fr.toString(a[1]).c_str());
-    LOG_TRACE("Start iFFT B");
     fft->ifft(b, domainSize);
-    LOG_TRACE("b After ifft:");
-    LOG_DEBUG(E.fr.toString(b[0]).c_str());
-    LOG_DEBUG(E.fr.toString(b[1]).c_str());
-    LOG_TRACE("Start Shift B");
     threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
         for (uint64_t i=begin; i<end; i++) {
             E.fr.mul(b[i], b[i], fft->root(domainPower+1, i));
         }
     });
-    LOG_TRACE("b After shift:");
-    LOG_DEBUG(E.fr.toString(b[0]).c_str());
-    LOG_DEBUG(E.fr.toString(b[1]).c_str());
-    LOG_TRACE("Start FFT B");
     fft->fft(b, domainSize);
-    LOG_TRACE("b After fft:");
-    LOG_DEBUG(E.fr.toString(b[0]).c_str());
-    LOG_DEBUG(E.fr.toString(b[1]).c_str());
-
-    LOG_TRACE("Start iFFT C");
     fft->ifft(c, domainSize);
-    LOG_TRACE("c After ifft:");
-    LOG_DEBUG(E.fr.toString(c[0]).c_str());
-    LOG_DEBUG(E.fr.toString(c[1]).c_str());
-    LOG_TRACE("Start Shift C");
     threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
         for (uint64_t i=begin; i<end; i++) {
             E.fr.mul(c[i], c[i], fft->root(domainPower+1, i));
         }
     });
-    LOG_TRACE("c After shift:");
-    LOG_DEBUG(E.fr.toString(c[0]).c_str());
-    LOG_DEBUG(E.fr.toString(c[1]).c_str());
-    LOG_TRACE("Start FFT C");
     fft->fft(c, domainSize);
-    LOG_TRACE("c After fft:");
-    LOG_DEBUG(E.fr.toString(c[0]).c_str());
-    LOG_DEBUG(E.fr.toString(c[1]).c_str());
-
-    LOG_TRACE("Start ABC");
     threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
         for (uint64_t i=begin; i<end; i++) {
             E.fr.mul(a[i], a[i], b[i]);
@@ -376,20 +308,12 @@ Prover<Engine>::execute_final_round(
             E.fr.fromMontgomery(a[i], a[i]);
         }
     });
-    LOG_TRACE("abc:");
-    LOG_DEBUG(E.fr.toString(a[0]).c_str());
-    LOG_DEBUG(E.fr.toString(a[1]).c_str());
 
     delete [] b;
     delete [] c;
 
-    LOG_TRACE("Start Multiexp H");
     typename Engine::G1Point pih;
     E.g1.multiMulByScalarMSM(pih, pointsH, (uint8_t *)a, sizeof(a[0]), domainSize);
-    std::ostringstream ss1;
-    ss1 << "pih: " << E.g1.toString(pih);
-    LOG_DEBUG(ss1);
-    
     delete [] a;
 
     // initializing variables for blinding factors
@@ -401,7 +325,7 @@ Prover<Engine>::execute_final_round(
     E.fr.copy(s, E.fr.zero());
 
     randombytes_buf((void *)&(r.v[0]), sizeof(r)-1);
-    randombytes_buf((void *)&(s.v[0]), sizeof(s)-1);\
+    randombytes_buf((void *)&(s.v[0]), sizeof(s)-1);
 
     // tmp variables for storing products
     typename Engine::G1Point p1;
@@ -503,6 +427,9 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     round_random_factor = std::get<1>(round_result);
     delete[] round_wtns;
 
+    // TODO Need to divide by module
+    challenge[31] = 0;
+
     typename Engine::FrElement rand;
     mpz_t x;
     mpz_init(x);
@@ -515,7 +442,6 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     std::cout << "Rand: " << tmp[0] << std::endl; 
     json j = tmp;
 
-    //Write to file    
     std::ofstream file("input_seheavy_verifier.json");
     if (file.is_open()) {
         file << j.dump();
@@ -525,7 +451,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     }
 
     uint64_t *witness = round2(out1, reinterpret_cast<uint64_t*>(challenge), sym_path);
-    bts(witness);
+    //bts(witness);
 
     typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_indexes_count];
     typename Engine::FrElement *wtns = (typename Engine::FrElement *)witness;
@@ -537,7 +463,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     }
 
     std::cout << "Execute final round" << std::endl;
-    // Pass converted start wtns
+
     // std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
     auto final_round_result = execute_final_round(
         wtns,
@@ -547,9 +473,8 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     std::cout << "Final round done" << std::endl;
 
     delete[] final_round_wtns;
-    delete[] wtns;
-    //free_witness(witness);
-    //free_RoundOneOut(out1);
+    free_witness(witness);
+    free_RoundOneOut(out1);
 
     Proof<Engine> *p = new Proof<Engine>(Engine::engine);
     E.g1.copy(p->A, std::get<0>(final_round_result));
@@ -581,7 +506,6 @@ json Proof<Engine>::toJson()
     p["pi_a"].push_back(E.f1.toString(A.x));
     p["pi_a"].push_back(E.f1.toString(A.y));
     p["pi_a"].push_back("1" );
-
 
     json x2;
     x2.push_back(E.f1.toString(B.x.a));
@@ -835,8 +759,8 @@ void Verifier<Engine>::lineFunctionDouble(
     typename Engine::F2Element& a,
     typename Engine::F2Element& b,
     typename Engine::F2Element& c,
-    typename Engine::G2Point& rOut)
-{
+    typename Engine::G2Point& rOut
+) {
     typename Engine::F2Element A, B, C_, D, E1, G, t;
 
     E.f2.square(A, r.x);
@@ -1067,15 +991,6 @@ Verifier<Engine>::finalExponentiation(typename Engine::F12Element &in)
     E.f12.mul(t0, t0, t1);
 
     return t0;
-}
-
-// For debug purposes
-template <typename Engine>
-typename Engine::F12Element Verifier<Engine>::pairing(typename Engine::G1Point a, typename Engine::G2Point b){
-    
-    auto miller_res = miller(b, a);
-    return finalExponentiation(miller_res);
-
 }
 
 template <typename Engine>
