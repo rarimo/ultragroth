@@ -513,7 +513,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     json j = tmp;
 
     //Write to file    
-    std::ofstream file("input_seheavy_verif.json");
+    std::ofstream file("input_seheavy_verifier.json");
     if (file.is_open()) {
         file << j.dump(); // pretty-print with 4 spaces indent
         file.close();
