@@ -91,10 +91,6 @@ set(
     binfile_utils.cpp
     zkey_utils.hpp
     zkey_utils.cpp
-    wtns_utils.hpp
-    wtns_utils.cpp
-    logger.hpp
-    logger.cpp
     fileloader.cpp
     fileloader.hpp
     rounds_extern.h

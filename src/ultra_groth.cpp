@@ -13,7 +13,6 @@
 #include <nlohmann/json.hpp>
 
 #include "random_generator.hpp"
-#include "logging.hpp"
 #include "misc.hpp"
 #include "rounds_extern.h"
 
@@ -32,10 +31,10 @@ namespace UltraGroth {
 
 template <typename Engine>
 std::unique_ptr<Prover<Engine>> makeProver(
-    u_int32_t nVars,
-    u_int32_t nPublic,
-    u_int32_t domainSize,
-    u_int64_t nCoefs,
+    uint32_t nVars,
+    uint32_t nPublic,
+    uint32_t domainSize,
+    uint64_t nCoefs,
     void *round_indexes,
     uint32_t round_indexes_count,
     void *final_round_indexes,
