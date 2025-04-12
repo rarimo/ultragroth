@@ -138,6 +138,11 @@ struct UltraGrothProver {
 
         std::cout << "Make prover call" << std::endl;
 
+        // Hardcode nonce for now;
+        uint8_t nonce[32];
+        memset(nonce, 0, 32);
+        uint32_t challenge_index = 1;
+
         prover = UltraGroth::makeProver<AltBn128::Engine>(
             zkeyHeader->nVars,
             zkeyHeader->nPublic,
@@ -147,6 +152,8 @@ struct UltraGrothProver {
             zkeyHeader->num_indexes_c1,
             zkey.getSectionData(11),   // final round indexes
             zkeyHeader->num_indexes_c2,
+            (void *)nonce, 
+            challenge_index,
             zkeyHeader->alpha1,
             zkeyHeader->beta1,
             zkeyHeader->beta2,
@@ -266,6 +273,7 @@ ultra_groth_prover_prove(
         UltraGrothProver *prover = static_cast<UltraGrothProver*>(prover_object);
         std::string stringProof, stringPublic;
 
+        // Hardcoded for now
         uint8_t accumulator[32];
         std::memset(accumulator, 0, 32 * sizeof(uint8_t));
 
