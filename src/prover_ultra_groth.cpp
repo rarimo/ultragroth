@@ -91,34 +91,36 @@ ultragroth_public_size_for_zkey_buf(
 }
 
 
-// HeaderGroth(2)
-//n8q
-//q
-//n8r
-//r
-//NVars
-//NPub
-//DomainSize  (multiple of 2)
-//[alpha]1
-//[beta]1
-//[beta]2
-//[gamma]2
-//[delta1]1
-//[delta1]2
-//[delta2]1
-//[delta2]2
+/*
+    HeaderGroth(2)
+    n8q
+    q
+    n8r
+    r
+    NVars
+    NPub
+    DomainSize  (multiple of 2)
+    [alpha]1
+    [beta]1
+    [beta]2
+    [gamma]2
+    [delta1]1
+    [delta1]2
+    [delta2]1
+    [delta2]2
 
-// IC(3)
-// Coeffs(4)
-// PointsA(5)
-// PointsB1(6)
-// PointsB2(7)
-// PointsC1(8)
-// PointsC2(9)
-// IndexesC1(10)
-// IndexesC2(11)
-// PointsH(12)
-// Contributions(13)
+    IC(3)
+    Coeffs(4)
+    PointsA(5)
+    PointsB1(6)
+    PointsB2(7)
+    PointsC1(8)
+    PointsC2(9)
+    IndexesC1(10)
+    IndexesC2(11)
+    PointsH(12)
+    Contributions(13)
+*/
 
 struct UltraGrothProver {
     BinFileUtils::BinFile zkey;

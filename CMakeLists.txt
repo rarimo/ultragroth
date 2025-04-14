@@ -11,15 +11,17 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
+# TODO Maybe pass path as argument to cmake configuration
+# Linux
 if(UNIX AND NOT APPLE)
-    # Linux
     set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/bionetta-prover/target/x86_64-unknown-linux-gnu/release/libwitness_generator.a)
 
+# Mac OS
 elseif(APPLE)
     set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/bionetta-prover/target/x86_64-apple-darwin/release/libwitness_generator.a)
-    
+
+# Windows
 else()
-    # Other (e.g., Windows)
     set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/bionetta-prover/target/release/libwitness_generator.a)
 endif()
 
