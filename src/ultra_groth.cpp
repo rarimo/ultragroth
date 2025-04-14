@@ -21,7 +21,7 @@ using json = nlohmann::json;
 
 namespace UltraGroth {
 
-static void keccak256_hash(const uint8_t *buffer, const size_t len, uint8_t *out_hash) {
+    static void keccak256_hash(const uint8_t *buffer, const size_t len, uint8_t *out_hash) {
     EVP_MD_CTX *ctx = EVP_MD_CTX_new();
     EVP_DigestInit_ex(ctx, EVP_sha3_256(), nullptr);
     EVP_DigestUpdate(ctx, buffer, len);
@@ -39,6 +39,8 @@ std::unique_ptr<Prover<Engine>> makeProver(
     uint32_t round_indexes_count,
     void *final_round_indexes,
     uint32_t final_round_indexes_count,
+    void *nonce, 
+    uint32_t challenge_index,
     void *vk_alpha1,
     void *vk_beta1,
     void *vk_beta2,
@@ -63,6 +65,8 @@ std::unique_ptr<Prover<Engine>> makeProver(
         round_indexes_count,
         (uint32_t *)final_round_indexes,
         final_round_indexes_count,
+        (uint8_t *)nonce, 
+        challenge_index,
         *(typename Engine::G1PointAffine *)vk_alpha1,
         *(typename Engine::G1PointAffine *)vk_beta1,
         *(typename Engine::G2PointAffine *)vk_beta2,
@@ -175,6 +179,12 @@ template <typename Engine> void Prover<Engine>::debug_prover_inputs()
     std::cout << final_round_pointsA_str << std::endl << std::endl;
 }
 
+static void print(uint8_t *array, uint32_t length){
+    for (uint32_t i = 0; i < length; i++){
+        std::cout << std::to_string(array[i]) << ", ";
+    }
+}
+
 template <typename Engine>
 std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement>
 Prover<Engine>::execute_round(
@@ -200,13 +210,18 @@ Prover<Engine>::execute_round(
     // Load x and y coordinates of commitment to buffer
     uint8_t buffer[32 + 2 * 32];
     memcpy(buffer, accumulator, 32 * sizeof(uint8_t));
-    uint64_t points_bytes[8] = {
-        commitment_projective.x.v[0], commitment_projective.x.v[1], commitment_projective.x.v[2], commitment_projective.x.v[3],
-        commitment_projective.y.v[0], commitment_projective.y.v[1], commitment_projective.y.v[2], commitment_projective.y.v[3]
-    };
-    memcpy(buffer + 32, points_bytes, 8 * sizeof(uint64_t));
-    
+
+    mpz_t coordinate_buffer;
+    mpz_init(coordinate_buffer);
+
+    E.f1.toMpz(coordinate_buffer, commitment.x);
+    mpz_export(buffer + 32, NULL, -1, 8, 1, 0, coordinate_buffer);
+
+    E.f1.toMpz(coordinate_buffer, commitment.y);
+    mpz_export(buffer + 64, NULL, -1, 8, 1, 0, coordinate_buffer);
+
     keccak256_hash(buffer, 32*3, accumulator);
+
     return {commitment, r};
 }
 
@@ -420,6 +435,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     
     memcpy(buffer, &challenge_index, sizeof(uint32_t));
     memcpy(buffer + 4, accumulator, 32 * sizeof(uint8_t));
+
     keccak256_hash(buffer, 4 + 32, challenge);
     
     round_commitment = std::get<0>(round_result);
@@ -429,7 +445,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     typename Engine::FrElement rand;
     mpz_t x;
     mpz_init(x);
-    mpz_import(x, 4, -1, 8, -1, 0, reinterpret_cast<uint64_t*>(challenge));
+    mpz_import(x, 32, 0, 1, -1, 0, challenge);
     E.fr.fromMpz(rand, x);
     E.fr.toMpz(x, rand);
     mpz_export(challenge, 0, -1, 8, -1, 0, x);
@@ -578,6 +594,9 @@ void VerificationKey<Engine>::fromJson(const json& key)
         G1PointAffineFromJson(E, point, el.value());
         IC.push_back(point);
     }
+
+    // Hardcode nonce value for now
+    memset(nonce, 0, 32);
 }
 
 template <typename Engine>
@@ -651,6 +670,13 @@ bool Verifier<Engine>::verify(Proof<Engine> &proof, InputsVector &inputs,
     G1PointArray g1 = {pA, negAlpha, negvkX, negFinalCommit, negRoundCommit};
     G2PointArray g2 = {pB, pBeta, pGamma, pFinalDelta, pRoundDelta};
 
+    bool hash_valid = challenge_check(inputs, key.nonce, proof.round_commitment, (uint32_t)1);
+
+    if (!hash_valid){
+        std::cout << "Challenges do not match" << std::endl;
+        return false;
+    }
+
     return pairingCheck(g1, g2);
 }
 
@@ -659,28 +685,33 @@ bool Verifier<Engine>::challenge_check(InputsVector &inputs, uint8_t *accumulato
 {
     uint8_t buffer[32 + 2 * 32];
     memcpy(buffer, accumulator, 32 * sizeof(uint8_t));
-    uint64_t points_bytes[8] = {
-        round_commitment.x.v[0], round_commitment.x.v[1], round_commitment.x.v[2], round_commitment.x.v[3],
-        round_commitment.y.v[0], round_commitment.y.v[1], round_commitment.y.v[2], round_commitment.y.v[3]
-    };
-    memcpy(buffer + 32, points_bytes, 8 * sizeof(uint64_t));
+
+    mpz_t coordinate_buffer;
+    mpz_init(coordinate_buffer);
+
+    E.f1.toMpz(coordinate_buffer, round_commitment.x);
+    mpz_export(buffer + 32, NULL, -1, 8, 1, 0, coordinate_buffer);
+
+    E.f1.toMpz(coordinate_buffer, round_commitment.y);
+    mpz_export(buffer + 64, NULL, -1, 8, 1, 0, coordinate_buffer);
+    
     keccak256_hash(buffer, 32*3, accumulator);
 
     uint8_t buffer1[4 + 32];
     uint8_t challenge[32];
     memcpy(buffer1, &challenge_index, sizeof(uint32_t));
     memcpy(buffer1 + 4, accumulator, 32 * sizeof(uint8_t));
-    keccak256_hash(buffer, 4 + 32, challenge);
 
-    typename Engine::Fr::Element input_challenge = inputs[challenge_index];
-    uint8_t* input_bytes = reinterpret_cast<uint8_t*>(new uint64_t[4] {
-        input_challenge.v[0], input_challenge.v[1], input_challenge.v[2], input_challenge.v[3]
-    });
+    keccak256_hash(buffer1, 4 + 32, challenge);
 
-    for (int i = 0; i < 32; ++i)
-        if (input_bytes[i] != challenge[i])
-            return false;
-    return true;
+    typename Engine::FrElement input_challenge = inputs[0];
+    typename Engine::FrElement rand;
+
+    mpz_init(coordinate_buffer);
+    mpz_import(coordinate_buffer, 32, 0, 1, -1, 0, challenge);
+    E.fr.fromMpz(rand, coordinate_buffer);
+
+    return E.fr.eq(input_challenge, rand);
 }
 
 template <typename Engine>
