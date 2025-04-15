@@ -397,13 +397,14 @@ Prover<Engine>::execute_final_round(
 template <typename Engine>
 std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     uint8_t *accumulator,
-    const uint8_t *input_path,
+    const uint8_t* bytes,
+    size_t json_size,
     const uint8_t *sym_path
 ) {
 
     // 1. Call round function from Rust code
     // Get from rust code uint64_t *wtns, uint32_t *wtns_indexes, uint32_t wtns_count
-    RoundOneOut *out1 = round1(input_path, sym_path);
+    RoundOneOut *out1 = round1(bytes, json_size, sym_path);
     uint64_t *wtns_digits = out1->witness_digits;
 
     // index in public input corresponding to derived challenge

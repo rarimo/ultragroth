@@ -38,7 +38,8 @@ ultra_groth_prover_prove(
     unsigned long long  *public_size,
     char                *error_msg,
     unsigned long long   error_msg_maxsize,
-    const uint8_t       *input_path,
+    const uint8_t* bytes,
+    size_t json_size,
     const uint8_t       *sym_path);
 
 /**
@@ -62,7 +63,8 @@ ultra_groth_prover(
     unsigned long long  *public_size,
     char                *error_msg,
     unsigned long long   error_msg_maxsize,
-    const uint8_t       *input_path,
+    const uint8_t* bytes,
+    size_t json_size,
     const uint8_t       *sym_path);
 
 #endif // PROVER_ULTRA_GROTH_H

@@ -218,7 +218,8 @@ ultra_groth_prover(
     unsigned long long  *public_size,
     char                *error_msg,
     unsigned long long   error_msg_maxsize,
-    const uint8_t       *input_path,
+    const uint8_t* bytes,
+    size_t json_size,
     const uint8_t       *sym_path
 ) {
     void *prover = NULL;
@@ -241,7 +242,8 @@ ultra_groth_prover(
         public_size,
         error_msg,
         error_msg_maxsize,
-        input_path,
+        bytes,
+        json_size,
         sym_path
     );
 
@@ -256,7 +258,8 @@ ultra_groth_prover_prove(
     unsigned long long  *public_size,
     char                *error_msg,
     unsigned long long   error_msg_maxsize,
-    const uint8_t       *input_path,
+    const uint8_t* bytes,
+    size_t json_size,
     const uint8_t       *sym_path
 ) {
     try {
@@ -283,7 +286,7 @@ ultra_groth_prover_prove(
         
         //prover->prover->debug_prover_inputs();
 
-        auto proof = prover->prover->prove(accumulator, input_path, sym_path);
+        auto proof = prover->prover->prove(accumulator, bytes, json_size, sym_path);
         auto jsonProof = proof->toJson();
         std::ofstream file("proof.json");
 

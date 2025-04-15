@@ -16,6 +16,23 @@
 #include "binfile_utils.hpp"
 #include "fileloader.hpp"
 
+const uint8_t* get_json_bytes(const char* filename, size_t* out_size) {
+    std::ifstream file(filename, std::ios::binary | std::ios::ate);
+    if (!file) return nullptr;
+
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    static std::vector<uint8_t> buffer;
+    buffer.resize(size);
+
+    if (!file.read(reinterpret_cast<char*>(buffer.data()), size)) {
+        return nullptr;
+    }
+
+    *out_size = buffer.size();
+    return buffer.data();  // pointer to byte array
+}
 
 int main(int argc, char **argv)
 {
@@ -33,6 +50,13 @@ int main(int argc, char **argv)
         unsigned long long       publicSize = 0;
         char                     errorMsg[1024];
 
+        size_t json_size = 0;
+        const uint8_t* bytes = get_json_bytes(argv[2], &json_size);
+
+        if (!bytes) {
+            std::cerr << "Failed to read JSON file\n";
+            return 1;
+        }
 
         int error = ultragroth_public_size_for_zkey_buf(
             zkeyFile.dataBuffer(),
@@ -55,7 +79,8 @@ int main(int argc, char **argv)
             &publicSize,
             errorMsg,
             sizeof(errorMsg),
-            reinterpret_cast<const uint8_t*>(argv[2]),
+            bytes,
+            json_size,
             reinterpret_cast<const uint8_t*>(argv[3])
         );
 

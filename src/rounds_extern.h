@@ -3,9 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define CHUNKS_TOTAL (8 * 8 * 10 * 25)
-#define WITNESS_SIZE 69761
-#define LOOKUP_SIZE (1 << 10)
+#define CHUNKS_TOTAL (((8 * 8) * 16) * 25)
 
 typedef struct RoundOneOut {
   uint64_t *witness_digits;
@@ -17,10 +15,14 @@ typedef struct RoundOneOut {
 extern "C" {
 #endif
 
-struct RoundOneOut *round1(const uint8_t *input_file, const uint8_t *sym_file);
+struct RoundOneOut *round1(const uint8_t *input_ptr, uintptr_t input_len, const uint8_t *sym_file);
+
 uint64_t *round2(struct RoundOneOut *round1_out, uint64_t *rand_digits, const uint8_t *sym_file);
+
 void bts(uint64_t *witness);
+
 void free_witness(uint64_t *ptr);
+
 void free_RoundOneOut(struct RoundOneOut *ptr);
 
 #ifdef __cplusplus
