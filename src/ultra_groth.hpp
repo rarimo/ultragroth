@@ -160,7 +160,7 @@ namespace UltraGroth {
         }
 
         // Function to execute entire proving process
-        std::unique_ptr<Proof<Engine>> prove(uint8_t *accumulator, const uint8_t* bytes, size_t json_size, const uint8_t *sym_path);
+        std::unique_ptr<Proof<Engine>> prove(uint8_t *accumulator, const uint8_t* bytes, size_t json_size);
 
         // Function to execute common round of proving process
         // Pointer to accumulator is passed to function; accumulator size is 32

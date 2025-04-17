@@ -398,13 +398,12 @@ template <typename Engine>
 std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     uint8_t *accumulator,
     const uint8_t* bytes,
-    size_t json_size,
-    const uint8_t *sym_path
+    size_t json_size
 ) {
 
     // 1. Call round function from Rust code
     // Get from rust code uint64_t *wtns, uint32_t *wtns_indexes, uint32_t wtns_count
-    RoundOneOut *out1 = round1(bytes, json_size, sym_path);
+    RoundOneOut *out1 = round1(bytes, json_size);
     uint64_t *wtns_digits = out1->witness_digits;
 
     // index in public input corresponding to derived challenge
@@ -463,7 +462,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
         std::cerr << "Error opening file\n";
     }
 
-    uint64_t *witness = round2(out1, reinterpret_cast<uint64_t*>(challenge), sym_path);
+    uint64_t *witness = round2(out1, reinterpret_cast<uint64_t*>(challenge));
     //bts(witness);
 
     typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_indexes_count];
