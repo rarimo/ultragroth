@@ -486,7 +486,6 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
 
     delete[] final_round_wtns;
     free_witness(witness);
-    free_RoundOneOut(out1);
 
     Proof<Engine> *p = new Proof<Engine>(Engine::engine);
     E.g1.copy(p->A, std::get<0>(final_round_result));
