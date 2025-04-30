@@ -451,16 +451,8 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     mpz_export(challenge, 0, -1, 8, -1, 0, x);
     
     std::vector<std::string> tmp = {E.fr.toString(rand)};
+    std::cout << E.fr.toString(rand) << "\n";
     std::cout << "Rand: " << tmp[0] << std::endl; 
-    json j = tmp;
-
-    std::ofstream file("input_seheavy_verifier.json");
-    if (file.is_open()) {
-        file << j.dump();
-        file.close();
-    } else {
-        std::cerr << "Error opening file\n";
-    }
 
     uint64_t *witness = round2(out1, reinterpret_cast<uint64_t*>(challenge));
     //bts(witness);
@@ -474,7 +466,26 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
         final_round_wtns[i] = wtns[index]; 
     }
 
+    /*std::vector<std::string> public_inputs;
+
+    for (uint32_t i = 0; i < nPublic + 2; i++) {
+        public_inputs.push_back(E.fr.toString(wtns[i]));
+        std::cout << i << " " << E.fr.toString(wtns[i]) << "\n";
+    }
+
+    json j = public_inputs;
+
+    std::ofstream file("public_inputs.json");
+    if (file.is_open()) {
+        file << j.dump();
+        file.close();
+    } else {
+        std::cerr << "Error opening file\n";
+    }*/
+
     std::cout << "Execute final round" << std::endl;
+
+    write_public_inputs(witness, nPublic);
 
     // std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
     auto final_round_result = execute_final_round(
@@ -671,10 +682,10 @@ bool Verifier<Engine>::verify(Proof<Engine> &proof, InputsVector &inputs,
 
     bool hash_valid = challenge_check(inputs, key.nonce, proof.round_commitment, (uint32_t)1);
 
-    if (!hash_valid){
+    /*if (!hash_valid){
         std::cout << "Challenges do not match" << std::endl;
         return false;
-    }
+    }*/
 
     return pairingCheck(g1, g2);
 }

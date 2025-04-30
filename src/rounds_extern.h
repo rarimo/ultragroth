@@ -25,6 +25,8 @@ uint64_t *round2(struct RoundOneOut *round1_out, uint64_t *rand_digits);
 
 void witness_from_digits(uint64_t *witness);
 
+void write_public_inputs(uint64_t *wtns_ptr, uintptr_t public_size);
+
 void free_witness(uint64_t *ptr);
 
 #ifdef __cplusplus
