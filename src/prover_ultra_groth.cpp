@@ -138,8 +138,6 @@ struct UltraGrothProver {
             throw std::invalid_argument("zkey curve not supported");
         }
 
-        std::cout << "Make prover call" << std::endl;
-
         // Hardcode nonce for now;
         uint8_t nonce[32];
         memset(nonce, 0, 32);
@@ -189,9 +187,9 @@ ultra_groth_prover_create(
         if (zkey_buffer == NULL) {
             throw std::invalid_argument("Null zkey buffer");
         }
-        std::cout << "Zkey reading" << std::endl;
+
         UltraGrothProver *prover = new UltraGrothProver(zkey_buffer, zkey_size);
-        std::cout << "Zkey processed" << std::endl;
+
         *prover_object = prover;
     } catch (std::exception& e) {
         CopyError(error_msg, error_msg_maxsize, e.what());
@@ -278,8 +276,6 @@ ultra_groth_prover_prove(
         // Hardcoded for now
         uint8_t accumulator[32];
         std::memset(accumulator, 0, 32 * sizeof(uint8_t));
-
-        std::cout << "Run prover" << std::endl;
         
         //prover->prover->debug_prover_inputs();
 

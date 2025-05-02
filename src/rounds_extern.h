@@ -13,6 +13,8 @@ typedef struct RoundOneOut {
   uint64_t *witness_digits;
   uint32_t *chunks;
   uint32_t *frequencies;
+  uint32_t chunks_total;
+  uint32_t lookup_size;
 } RoundOneOut;
 
 #ifdef __cplusplus
@@ -22,6 +24,7 @@ extern "C" {
 struct RoundOneOut *round1(const uint8_t *input_ptr, uintptr_t input_len);
 
 uint64_t *round2(struct RoundOneOut *round1_out, uint64_t *rand_digits);
+uint64_t *round2_new( uint64_t *wtns_digits, uint64_t *rand_digits, uint64_t *inv1_digits, uint64_t *inv2_digits, uint64_t *prod_digits);
 
 void witness_from_digits(uint64_t *witness);
 

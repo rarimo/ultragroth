@@ -5,6 +5,8 @@
 #include <tuple>
 #include <memory>
 #include <gmp.h>
+#include <cstring>
+#include "../build/fr.hpp"
 
 #include <openssl/evp.h>
 #include <nlohmann/json.hpp>
@@ -21,7 +23,52 @@ using json = nlohmann::json;
 
 namespace UltraGroth {
 
-    static void keccak256_hash(const uint8_t *buffer, const size_t len, uint8_t *out_hash) {
+static void copy_digits(RawFr::Element a, uint64_t *dest) {
+    RawFr::Element tmp;
+    Fr_rawFromMontgomery(tmp.v, a.v);
+    
+    for (int i = 0; i < 4; i++){
+        dest[i] = tmp.v[i];
+    }
+}
+
+/// Ownership of this arrays will be taken by boxes inside Rust, so there is no need to destroy them
+struct LookupInput {
+    uint64_t *inv1;
+    uint64_t *inv2;
+    uint64_t *prod;
+};
+
+static LookupInput compute_lookup(RoundOneOut *out, RawFr::Element rand) {
+
+    uint32_t *chunks = out->chunks;
+    uint32_t *frequencies = out->frequencies;
+    uint32_t chunks_total = out->chunks_total;
+    uint32_t lookup_size = out->lookup_size;
+
+    uint64_t *inv1_digits = new uint64_t[chunks_total << 2];
+    uint64_t *inv2_digits = new uint64_t[lookup_size << 2];
+    uint64_t *prod_digits = new uint64_t[lookup_size << 2];
+
+    for (int i = 0; i < lookup_size; i++) {
+        RawFr::Element sum = RawFr::field.add(i, rand);
+        RawFr::Element inv;
+        RawFr::field.inv(inv, sum);
+        copy_digits(inv, &inv2_digits[i << 2]);
+        RawFr::Element prod = RawFr::field.mul(frequencies[i], inv);
+        copy_digits(prod, &prod_digits[i << 2]);
+    }
+
+    for (int i = 0; i < chunks_total; i++) {
+        memcpy(&inv1_digits[i << 2], &inv2_digits[chunks[i] << 2], sizeof(uint64_t) * 4);
+    }
+    uint64_t *rand_digits = new uint64_t[4];
+    copy_digits(rand, rand_digits);
+
+    return LookupInput{inv1_digits, inv2_digits, prod_digits};
+}
+
+static void keccak256_hash(const uint8_t *buffer, const size_t len, uint8_t *out_hash) {
     EVP_MD_CTX *ctx = EVP_MD_CTX_new();
     EVP_DigestInit_ex(ctx, EVP_sha3_256(), nullptr);
     EVP_DigestUpdate(ctx, buffer, len);
@@ -400,7 +447,6 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     const uint8_t* bytes,
     size_t json_size
 ) {
-
     // 1. Call round function from Rust code
     // Get from rust code uint64_t *wtns, uint32_t *wtns_indexes, uint32_t wtns_count
     RoundOneOut *out1 = round1(bytes, json_size);
@@ -419,15 +465,11 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     // Probably change way to load elements for first round later
     typename Engine::FrElement *wtns_first = (typename Engine::FrElement *)wtns_digits;
 
-    std::cout << "Casting round wtns" << std::endl;
-
     for (uint32_t i = 0; i < round_indexes_count; i++) {
         round_wtns[i] = wtns_first[round_indexes[i]];
     }
 
-    std::cout << "Executre first round" << std::endl;
     std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement> round_result = execute_round(round_wtns, round_indexes_count, accumulator);
-    std::cout << "First round done" << std::endl;
 
     // buffer to hash challenge index + accumulator
     uint8_t buffer[4 + 32];
@@ -449,13 +491,11 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     E.fr.fromMpz(rand, x);
     E.fr.toMpz(x, rand);
     mpz_export(challenge, 0, -1, 8, -1, 0, x);
-    
-    std::vector<std::string> tmp = {E.fr.toString(rand)};
-    std::cout << E.fr.toString(rand) << "\n";
-    std::cout << "Rand: " << tmp[0] << std::endl; 
 
-    uint64_t *witness = round2(out1, reinterpret_cast<uint64_t*>(challenge));
-    //bts(witness);
+    auto start = std::chrono::high_resolution_clock::now();
+
+    LookupInput input = compute_lookup(out1, rand);
+    uint64_t *witness = round2_new(wtns_digits, reinterpret_cast<uint64_t*>(challenge), input.inv1, input.inv2, input.prod);
 
     typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_indexes_count];
     typename Engine::FrElement *wtns = (typename Engine::FrElement *)witness;
@@ -466,34 +506,13 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
         final_round_wtns[i] = wtns[index]; 
     }
 
-    /*std::vector<std::string> public_inputs;
-
-    for (uint32_t i = 0; i < nPublic + 2; i++) {
-        public_inputs.push_back(E.fr.toString(wtns[i]));
-        std::cout << i << " " << E.fr.toString(wtns[i]) << "\n";
-    }
-
-    json j = public_inputs;
-
-    std::ofstream file("public_inputs.json");
-    if (file.is_open()) {
-        file << j.dump();
-        file.close();
-    } else {
-        std::cerr << "Error opening file\n";
-    }*/
-
-    std::cout << "Execute final round" << std::endl;
-
     write_public_inputs(witness, nPublic);
 
-    // std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
     auto final_round_result = execute_final_round(
         wtns,
         final_round_wtns,
         round_random_factor
     );
-    std::cout << "Final round done" << std::endl;
 
     delete[] final_round_wtns;
     free_witness(witness);

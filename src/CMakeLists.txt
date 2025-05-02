@@ -1,3 +1,6 @@
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -mtune=native")
+set(CMAKE_C_FLAGS_RELEASE   "-O3 -march=native -mtune=native")
+
 link_libraries(${GMP_LIB})
 
 add_definitions(${GMP_DEFINIONS})
