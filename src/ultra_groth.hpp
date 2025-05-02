@@ -44,6 +44,7 @@ namespace UltraGroth {
         typename Engine::G2PointAffine round_delta2;
         std::vector<typename Engine::G1PointAffine> IC;
         uint8_t nonce[32];
+        uint32_t challenge_index;
 
         VerificationKey(Engine &_E) : E(_E) { }
         void fromJson(const json &proof);
@@ -222,7 +223,7 @@ namespace UltraGroth {
 
     private:
 
-        bool challenge_check(InputsVector &inputs, uint8_t *accumulator, typename Engine::G1PointAffine round_commitment, uint32_t challenge_index);
+        typename Engine::FrElement derive_challenge(uint8_t *accumulator, typename Engine::G1PointAffine round_commitment, uint32_t challenge_index);
 
         bool pairingCheck(G1PointArray& g1, G2PointArray& g2);
 

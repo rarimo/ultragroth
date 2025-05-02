@@ -7,6 +7,7 @@
 #include <gmp.h>
 #include <cstring>
 #include "../build/fr.hpp"
+#include <chrono>
 
 #include <openssl/evp.h>
 #include <nlohmann/json.hpp>
@@ -284,16 +285,50 @@ Prover<Engine>::execute_final_round(
 
     uint32_t sW = sizeof(wtns[0]);
     typename Engine::G1Point pi_a;
+
+    std::cout << "nVars: " << nVars << std::endl;
+
+    auto start_msm1 = std::chrono::high_resolution_clock::now();
+
     E.g1.multiMulByScalarMSM(pi_a, pointsA, (uint8_t *)wtns, sW, nVars);
 
+    auto end_msm1 = std::chrono::high_resolution_clock::now();
+
+    auto duration_msm1 = std::chrono::duration_cast<std::chrono::milliseconds>(end_msm1 - start_msm1);
+    std::cout << "MSM1 taken: " << duration_msm1.count() << " milliseconds" << std::endl;
+
     typename Engine::G1Point pib1;
+    
+    auto start_msm2 = std::chrono::high_resolution_clock::now();
+
     E.g1.multiMulByScalarMSM(pib1, pointsB1, (uint8_t *)wtns, sW, nVars);
+
+    auto end_msm2 = std::chrono::high_resolution_clock::now();
+
+    auto duration_msm2 = std::chrono::duration_cast<std::chrono::milliseconds>(end_msm2 - start_msm2);
+    std::cout << "MSM2 taken: " << duration_msm2.count() << " milliseconds" << std::endl;
+
+    auto start_msm3 = std::chrono::high_resolution_clock::now();
 
     typename Engine::G2Point pi_b;
     E.g2.multiMulByScalarMSM(pi_b, pointsB2, (uint8_t *)wtns, sW, nVars);
 
+    auto end_msm3 = std::chrono::high_resolution_clock::now();
+
+    auto duration_msm3 = std::chrono::duration_cast<std::chrono::milliseconds>(end_msm3 - start_msm3);
+    std::cout << "MSM3 taken: " << duration_msm3.count() << " milliseconds" << std::endl;
+
+    auto start_msm4 = std::chrono::high_resolution_clock::now();
+
     typename Engine::G1Point pi_c;
     E.g1.multiMulByScalarMSM(pi_c, final_pointsC, (uint8_t *)final_wtns, sW, final_round_indexes_count);
+
+    auto end_msm4 = std::chrono::high_resolution_clock::now();
+
+    auto duration_msm4 = std::chrono::duration_cast<std::chrono::milliseconds>(end_msm4 - start_msm4);
+    std::cout << "MSM4 taken: " << duration_msm4.count() << " milliseconds" << std::endl;
+
+    auto start_fft = std::chrono::high_resolution_clock::now();
 
     auto a = new typename Engine::FrElement[domainSize];
     auto b = new typename Engine::FrElement[domainSize];
@@ -373,9 +408,21 @@ Prover<Engine>::execute_final_round(
     delete [] b;
     delete [] c;
 
+    auto end_fft = std::chrono::high_resolution_clock::now();
+
+    auto duration_fft = std::chrono::duration_cast<std::chrono::milliseconds>(end_fft - start_fft);
+    std::cout << "FFT taken: " << duration_fft.count() << " milliseconds" << std::endl;
+
+    auto start_msm5 = std::chrono::high_resolution_clock::now();
+
     typename Engine::G1Point pih;
     E.g1.multiMulByScalarMSM(pih, pointsH, (uint8_t *)a, sizeof(a[0]), domainSize);
     delete [] a;
+
+    auto end_msm5 = std::chrono::high_resolution_clock::now();
+
+    auto duration_msm5 = std::chrono::duration_cast<std::chrono::milliseconds>(end_msm5 - start_msm5);
+    std::cout << "MSM5 taken: " << duration_msm5.count() << " milliseconds" << std::endl;
 
     // initializing variables for blinding factors
     typename Engine::FrElement r;
@@ -491,8 +538,6 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     E.fr.fromMpz(rand, x);
     E.fr.toMpz(x, rand);
     mpz_export(challenge, 0, -1, 8, -1, 0, x);
-
-    auto start = std::chrono::high_resolution_clock::now();
 
     LookupInput input = compute_lookup(out1, rand);
     uint64_t *witness = round2_new(wtns_digits, reinterpret_cast<uint64_t*>(challenge), input.inv1, input.inv2, input.prod);
@@ -626,6 +671,7 @@ void VerificationKey<Engine>::fromJson(const json& key)
 
     // Hardcode nonce value for now
     memset(nonce, 0, 32);
+    challenge_index = 5;
 }
 
 template <typename Engine>
@@ -653,11 +699,17 @@ bool Verifier<Engine>::verify(Proof<Engine> &proof, InputsVector &inputs,
     }
 
     typename Engine::G1Point vkX = E.g1.zero();
+    uint32_t challenge_index = key.challenge_index;
 
     for (int i = 0; i < inputs.size(); i++) {
         typename Engine::FrElement input;
 
-        E.fr.fromMontgomery(input, inputs[i]);
+        if (i != challenge_index) {
+            E.fr.fromMontgomery(input, inputs[i]);
+        }
+        else {
+            input = derive_challenge(key.nonce, proof.round_commitment, challenge_index);
+        }
 
         typename Engine::G1Point p1;
         E.g1.mulByScalar(p1, key.IC[i+1], (uint8_t *)&input, sizeof(input));
@@ -699,18 +751,11 @@ bool Verifier<Engine>::verify(Proof<Engine> &proof, InputsVector &inputs,
     G1PointArray g1 = {pA, negAlpha, negvkX, negFinalCommit, negRoundCommit};
     G2PointArray g2 = {pB, pBeta, pGamma, pFinalDelta, pRoundDelta};
 
-    bool hash_valid = challenge_check(inputs, key.nonce, proof.round_commitment, (uint32_t)1);
-
-    /*if (!hash_valid){
-        std::cout << "Challenges do not match" << std::endl;
-        return false;
-    }*/
-
     return pairingCheck(g1, g2);
 }
 
 template <typename Engine>
-bool Verifier<Engine>::challenge_check(InputsVector &inputs, uint8_t *accumulator, typename Engine::G1PointAffine round_commitment, uint32_t challenge_index)
+typename Engine::FrElement Verifier<Engine>::derive_challenge(uint8_t *accumulator, typename Engine::G1PointAffine round_commitment, uint32_t challenge_index)
 {
     uint8_t buffer[32 + 2 * 32];
     memcpy(buffer, accumulator, 32 * sizeof(uint8_t));
@@ -733,14 +778,9 @@ bool Verifier<Engine>::challenge_check(InputsVector &inputs, uint8_t *accumulato
 
     keccak256_hash(buffer1, 4 + 32, challenge);
 
-    typename Engine::FrElement input_challenge = inputs[0];
     typename Engine::FrElement rand;
 
-    mpz_init(coordinate_buffer);
-    mpz_import(coordinate_buffer, 32, 0, 1, -1, 0, challenge);
-    E.fr.fromMpz(rand, coordinate_buffer);
-
-    return E.fr.eq(input_challenge, rand);
+    return rand;
 }
 
 template <typename Engine>
