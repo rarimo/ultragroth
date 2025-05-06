@@ -541,6 +541,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
 
     LookupInput input = compute_lookup(out1, rand);
     uint64_t *witness = round2_new(wtns_digits, reinterpret_cast<uint64_t*>(challenge), input.inv1, input.inv2, input.prod);
+    witness_from_digits(witness);
 
     typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_indexes_count];
     typename Engine::FrElement *wtns = (typename Engine::FrElement *)witness;

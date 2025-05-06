@@ -75,7 +75,7 @@ build_host()
 
     if [ -d "$PACKAGE_DIR" ]; then
         echo "Host package is built already. See $PACKAGE_DIR"
-        return 1
+        return 0
     fi
 
     rm -rf "$BUILD_DIR"

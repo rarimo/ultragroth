@@ -13,7 +13,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # TODO Maybe pass path as argument to cmake configuration
 # Linux
-if(UNIX AND NOT APPLE)
+if (DEFINED CMAKE_LIB_PATH)
+    message("Found path to lib: ${CMAKE_LIB_PATH}.")
+    set(BIONETTA_PROVER_LIB ${CMAKE_LIB_PATH})
+
+elseif(UNIX AND NOT APPLE)
     set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/bionetta-witness-generator/target/x86_64-unknown-linux-gnu/release/libtest.a)
 
 # Mac OS
