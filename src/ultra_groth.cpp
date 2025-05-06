@@ -672,7 +672,7 @@ void VerificationKey<Engine>::fromJson(const json& key)
 
     // Hardcode nonce value for now
     memset(nonce, 0, 32);
-    challenge_index = 5;
+    challenge_index = 6;
 }
 
 template <typename Engine>
