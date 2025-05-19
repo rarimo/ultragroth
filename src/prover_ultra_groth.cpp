@@ -280,6 +280,11 @@ ultra_groth_prover_prove(
         //prover->prover->debug_prover_inputs();
 
         auto proof = prover->prover->prove(accumulator, bytes, json_size);
+        
+        if (proof->error_size > 0) {
+            throw std::invalid_argument(std::string(reinterpret_cast<const char*>(proof->error), proof->error_size));
+        }
+        
         auto jsonProof = proof->toJson();
         std::ofstream file("proof.json");
 

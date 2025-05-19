@@ -26,6 +26,8 @@ namespace UltraGroth {
         typename Engine::G2PointAffine B;
         typename Engine::G1PointAffine final_commitment;
         typename Engine::G1PointAffine round_commitment;
+        uint8_t *error;
+        uint32_t error_size;
 
         Proof(Engine &_E) : E(_E) { }
         std::string toJsonStr();

@@ -40,12 +40,12 @@ struct LookupInput {
     uint64_t *prod;
 };
 
-static LookupInput compute_lookup(RoundOneOut *out, RawFr::Element rand) {
+static LookupInput compute_lookup(RoundOneOut out, RawFr::Element rand) {
 
-    uint32_t *chunks = out->chunks;
-    uint32_t *frequencies = out->frequencies;
-    uint32_t chunks_total = out->chunks_total;
-    uint32_t lookup_size = out->lookup_size;
+    uint32_t *chunks = out.chunks;
+    uint32_t *frequencies = out.frequencies;
+    uint32_t chunks_total = out.chunks_total;
+    uint32_t lookup_size = out.lookup_size;
 
     uint64_t *inv1_digits = new uint64_t[chunks_total << 2];
     uint64_t *inv2_digits = new uint64_t[lookup_size << 2];
@@ -494,10 +494,19 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     const uint8_t* bytes,
     size_t json_size
 ) {
+    Proof<Engine> *p = new Proof<Engine>(Engine::engine);
+    p->error = nullptr;
+    p->error_size = 0;
+
     // 1. Call round function from Rust code
     // Get from rust code uint64_t *wtns, uint32_t *wtns_indexes, uint32_t wtns_count
-    RoundOneOut *out1 = round1(bytes, json_size);
-    uint64_t *wtns_digits = out1->witness_digits;
+    RoundOneOut out1 = round1(bytes, json_size);
+    if (out1.error_size > 0) {
+        p->error = out1.error;
+        p->error_size = out1.error_size;
+        return std::unique_ptr<Proof<Engine>>(p); 
+    }
+    uint64_t *wtns_digits = out1.witness_digits;
 
     // index in public input corresponding to derived challenge
     uint32_t challenge_index = 1;
@@ -540,8 +549,14 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     mpz_export(challenge, 0, -1, 8, -1, 0, x);
 
     LookupInput input = compute_lookup(out1, rand);
-    uint64_t *witness = round2_new(wtns_digits, reinterpret_cast<uint64_t*>(challenge), input.inv1, input.inv2, input.prod);
-    witness_from_digits(witness);
+    RoundTwoOut round2out = round2(wtns_digits, reinterpret_cast<uint64_t*>(challenge), input.inv1, input.inv2, input.prod);
+    if (out1.error_size > 0) {
+        p->error = round2out.error;
+        p->error_size = round2out.error_size;
+        return std::unique_ptr<Proof<Engine>>(p);
+    }
+    uint64_t *witness = round2out.witness_digits;
+    //witness_from_digits(witness);
 
     typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_indexes_count];
     typename Engine::FrElement *wtns = (typename Engine::FrElement *)witness;
@@ -563,7 +578,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     delete[] final_round_wtns;
     free_witness(witness);
 
-    Proof<Engine> *p = new Proof<Engine>(Engine::engine);
+    //Proof<Engine> *p = new Proof<Engine>(Engine::engine);
     E.g1.copy(p->A, std::get<0>(final_round_result));
     E.g2.copy(p->B, std::get<1>(final_round_result));
     E.g1.copy(p->final_commitment, std::get<2>(final_round_result));
