@@ -51,6 +51,7 @@ std::tuple<std::vector<uint32_t>, std::vector<uint32_t>> load_indexes(std::strin
         domain_size (2 ** (log2(n_constraints + n_pubs) + 1))
         n_indexes_c1
         n_indexes_c2
+        rand_indx
         alpha_1
         beta_1
         beta_2
@@ -97,6 +98,7 @@ std::unique_ptr<Header> loadHeader(BinFileUtils::BinFile *f) {
     
     h->num_indexes_c1 = f->readU32LE();
     h->num_indexes_c2 = f->readU32LE();
+    h->rand_indx = f->readU32LE();
 
     h->alpha1 = f->read(h->n8q*2);
     h->beta1 = f->read(h->n8q*2);

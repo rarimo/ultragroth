@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -31,7 +33,7 @@ uint64_t *round2_debug(RoundOneOut out, uint64_t *rand_digits);
 
 void witness_from_digits(uint64_t *witness, uint32_t size);
 
-void write_public_inputs(uint64_t *wtns_ptr, uintptr_t public_size);
+void write_public_inputs(uint64_t *wtns_ptr, uintptr_t wtns_size, uintptr_t public_size);
 
 void free_witness(uint64_t *ptr);
 

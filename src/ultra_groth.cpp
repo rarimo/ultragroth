@@ -9,7 +9,7 @@
 #include "../build/fr.hpp"
 #include <chrono>
 
-#include <openssl/evp.h>
+#include <keccak256.h>
 #include <nlohmann/json.hpp>
 #include <fstream>
 
@@ -69,13 +69,13 @@ static LookupInput compute_lookup(RoundOneOut out, RawFr::Element rand) {
     return LookupInput{inv1_digits, inv2_digits, prod_digits};
 }
 
-static void keccak256_hash(const uint8_t *buffer, const size_t len, uint8_t *out_hash) {
-    EVP_MD_CTX *ctx = EVP_MD_CTX_new();
-    EVP_DigestInit_ex(ctx, EVP_sha3_256(), nullptr);
-    EVP_DigestUpdate(ctx, buffer, len);
-    EVP_DigestFinal_ex(ctx, out_hash, nullptr);
-    EVP_MD_CTX_free(ctx);
-}
+//static void keccak256_hash(const uint8_t *buffer, const size_t len, uint8_t *out_hash) {
+//    EVP_MD_CTX *ctx = EVP_MD_CTX_new();
+//    EVP_DigestInit_ex(ctx, EVP_sha3_256(), nullptr);
+//    EVP_DigestUpdate(ctx, buffer, len);
+//    EVP_DigestFinal_ex(ctx, out_hash, nullptr);
+//    EVP_MD_CTX_free(ctx);
+//}
 
 template <typename Engine>
 std::unique_ptr<Prover<Engine>> makeProver(
@@ -256,19 +256,18 @@ Prover<Engine>::execute_round(
     E.g1.copy(commitment, commitment_projective);
     
     // Load x and y coordinates of commitment to buffer
-    uint8_t buffer[32 + 2 * 32];
-    memcpy(buffer, accumulator, 32 * sizeof(uint8_t));
+    uint8_t buffer[2 * 32];
 
     mpz_t coordinate_buffer;
     mpz_init(coordinate_buffer);
 
     E.f1.toMpz(coordinate_buffer, commitment.x);
-    mpz_export(buffer + 32, NULL, -1, 8, 1, 0, coordinate_buffer);
+    mpz_export(buffer + 0, NULL, -1, 8, 1, 0, coordinate_buffer);
 
     E.f1.toMpz(coordinate_buffer, commitment.y);
-    mpz_export(buffer + 64, NULL, -1, 8, 1, 0, coordinate_buffer);
+    mpz_export(buffer + 32, NULL, -1, 8, 1, 0, coordinate_buffer);
 
-    keccak256_hash(buffer, 32*3, accumulator);
+    FIPS202_KECCAK_256(buffer, 32*2, accumulator);
 
     return {commitment, r};
 }
@@ -534,7 +533,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     memcpy(buffer, &challenge_index, sizeof(uint32_t));
     memcpy(buffer + 4, accumulator, 32 * sizeof(uint8_t));
 
-    keccak256_hash(buffer, 4 + 32, challenge);
+    FIPS202_KECCAK_256(buffer, 4 + 32, challenge);
     
     round_commitment = std::get<0>(round_result);
     round_random_factor = std::get<1>(round_result);
@@ -567,7 +566,8 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
         final_round_wtns[i] = wtns[index]; 
     }
 
-    write_public_inputs(witness, nPublic);
+    write_public_inputs(witness, nVars, nPublic);
+    witness_from_digits(witness, nVars);
 
     auto final_round_result = execute_final_round(
         wtns,
@@ -687,7 +687,7 @@ void VerificationKey<Engine>::fromJson(const json& key)
 
     // Hardcode nonce value for now
     memset(nonce, 0, 32);
-    challenge_index = 6;
+    challenge_index = key["randIdx"];
 }
 
 template <typename Engine>
@@ -726,7 +726,7 @@ bool Verifier<Engine>::verify(Proof<Engine> &proof, InputsVector &inputs,
         else {
             input = derive_challenge(key.nonce, proof.round_commitment, challenge_index);
         }
-
+        
         typename Engine::G1Point p1;
         E.g1.mulByScalar(p1, key.IC[i+1], (uint8_t *)&input, sizeof(input));
         E.g1.add(vkX, vkX, p1);
@@ -773,8 +773,7 @@ bool Verifier<Engine>::verify(Proof<Engine> &proof, InputsVector &inputs,
 template <typename Engine>
 typename Engine::FrElement Verifier<Engine>::derive_challenge(uint8_t *accumulator, typename Engine::G1PointAffine round_commitment, uint32_t challenge_index)
 {
-    uint8_t buffer[32 + 2 * 32];
-    memcpy(buffer, accumulator, 32 * sizeof(uint8_t));
+    uint8_t buffer[2 * 32];
 
     mpz_t coordinate_buffer;
     mpz_init(coordinate_buffer);
@@ -785,14 +784,14 @@ typename Engine::FrElement Verifier<Engine>::derive_challenge(uint8_t *accumulat
     E.f1.toMpz(coordinate_buffer, round_commitment.y);
     mpz_export(buffer + 64, NULL, -1, 8, 1, 0, coordinate_buffer);
     
-    keccak256_hash(buffer, 32*3, accumulator);
+    FIPS202_KECCAK_256(buffer, 32*2, accumulator);
 
     uint8_t buffer1[4 + 32];
     uint8_t challenge[32];
     memcpy(buffer1, &challenge_index, sizeof(uint32_t));
     memcpy(buffer1 + 4, accumulator, 32 * sizeof(uint8_t));
 
-    keccak256_hash(buffer1, 4 + 32, challenge);
+    FIPS202_KECCAK_256(buffer1, 4 + 32, challenge);
 
     typename Engine::FrElement rand;
 

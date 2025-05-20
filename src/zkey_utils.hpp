@@ -18,6 +18,7 @@
 //      domain_size (2 ** (log2(n_constraints + n_pubs) + 1))
 //      n_indexes_c1
 //      n_indexes_c2
+//      rand_indx
 //      alpha_1
 //      beta_1
 //      beta_2
@@ -56,6 +57,7 @@ namespace ZKeyUtils {
 
         uint32_t num_indexes_c1;
         uint32_t num_indexes_c2;
+        uint32_t rand_indx;
         
         void *alpha1;
         void *beta1;

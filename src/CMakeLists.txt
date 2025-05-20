@@ -90,6 +90,8 @@ endif()
 
 set(
     LIB_SOURCES
+    keccak256.cpp
+    keccak256.h
     binfile_utils.hpp
     binfile_utils.cpp
     zkey_utils.hpp
@@ -119,6 +121,7 @@ include_directories(
     ../depends/json/single_include
 )
 
+
 add_library(rapidsnarkStatic STATIC ${LIB_SOURCES})
 set_target_properties(rapidsnarkStatic PROPERTIES OUTPUT_NAME rapidsnark)
 
@@ -129,11 +132,12 @@ set_target_properties(rapidsnarkStaticFrFq PROPERTIES OUTPUT_NAME rapidsnark-fr-
 
 find_package(OpenSSL REQUIRED)
 add_executable(prover_ultra_groth main_prover_ultra_groth.cpp)
-target_link_libraries(prover_ultra_groth rapidsnarkStatic OpenSSL::Crypto ${BIONETTA_PROVER_LIB})
+target_link_libraries(prover_ultra_groth rapidsnarkStatic ${BIONETTA_PROVER_LIB} )
 
 
 find_package(OpenSSL REQUIRED)
 add_executable(verifier_ultra_groth main_verifier_ultra_groth.cpp)
-target_link_libraries(verifier_ultra_groth rapidsnarkStatic OpenSSL::Crypto)
+target_link_libraries(verifier_ultra_groth rapidsnarkStatic)
 
 add_library(rapidsnark SHARED ${LIB_SOURCES})
+

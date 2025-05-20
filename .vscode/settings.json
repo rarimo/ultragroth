@@ -91,7 +91,8 @@
         "__threading_support": "cpp",
         "locale": "cpp",
         "print": "cpp",
-        "strstream": "cpp"
+        "strstream": "cpp",
+        "keccak256.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

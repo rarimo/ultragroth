@@ -13,6 +13,7 @@
 #include "fileloader.hpp"
 
 #include "prover_ultra_groth.hpp"
+#include <keccak256.h>
 
 
 static void
@@ -153,7 +154,7 @@ struct UltraGrothProver {
             zkey.getSectionData(11),   // final round indexes
             zkeyHeader->num_indexes_c2,
             (void *)nonce, 
-            challenge_index,
+            zkeyHeader->rand_indx,
             zkeyHeader->alpha1,
             zkeyHeader->beta1,
             zkeyHeader->beta2,
