@@ -79,7 +79,6 @@ std::unique_ptr<Prover<Engine>> makeProver(
     uint32_t round_indexes_count,
     void *final_round_indexes,
     uint32_t final_round_indexes_count,
-    void *nonce, 
     uint32_t challenge_index,
     void *vk_alpha1,
     void *vk_beta1,
@@ -105,7 +104,6 @@ std::unique_ptr<Prover<Engine>> makeProver(
         round_indexes_count,
         (uint32_t *)final_round_indexes,
         final_round_indexes_count,
-        (uint8_t *)nonce, 
         challenge_index,
         *(typename Engine::G1PointAffine *)vk_alpha1,
         *(typename Engine::G1PointAffine *)vk_beta1,
@@ -228,7 +226,7 @@ static void print(uint8_t *array, uint32_t length){
 template <typename Engine>
 std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement>
 Prover<Engine>::execute_round(
-    const typename Engine::FrElement *round_wtns, const uint64_t wtns_count, uint8_t *accumulator
+    const typename Engine::FrElement *round_wtns, const uint64_t wtns_count
 ) {
     uint32_t sW = sizeof(round_wtns[0]);
     typename Engine::G1Point commitment_projective;
@@ -247,19 +245,21 @@ Prover<Engine>::execute_round(
     typename Engine::G1PointAffine commitment;
     E.g1.copy(commitment, commitment_projective);
     
-    // Load x and y coordinates of commitment to buffer
-    uint8_t buffer[2 * 32];
-
-    mpz_t coordinate_buffer;
-    mpz_init(coordinate_buffer);
-
-    E.f1.toMpz(coordinate_buffer, commitment.x);
-    mpz_export(buffer + 0, NULL, -1, 8, 1, 0, coordinate_buffer);
-
-    E.f1.toMpz(coordinate_buffer, commitment.y);
-    mpz_export(buffer + 32, NULL, -1, 8, 1, 0, coordinate_buffer);
-
-    FIPS202_KECCAK_256(buffer, 32*2, accumulator);
+    //// Load x and y coordinates of commitment to buffer
+    //uint8_t buffer[2 * 32] {};
+//
+    //mpz_t coordinate_buffer1;
+    //mpz_init(coordinate_buffer1);
+    //mpz_t coordinate_buffer2;
+    //mpz_init(coordinate_buffer2);
+//
+    //E.f1.toMpz(coordinate_buffer1, commitment.x);
+    //mpz_export(buffer + 0, NULL, -1, 8, 1, 0, coordinate_buffer1);
+//
+    //E.f1.toMpz(coordinate_buffer2, commitment.y);
+    //mpz_export(buffer + 32, NULL, -1, 8, 1, 0, coordinate_buffer2);
+//
+    //FIPS202_KECCAK_256(buffer, 32*2, accumulator);
 
     return {commitment, r};
 }
@@ -481,7 +481,6 @@ Prover<Engine>::execute_final_round(
 
 template <typename Engine>
 std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
-    uint8_t *accumulator,
     const uint8_t* bytes,
     size_t json_size
 ) {
@@ -498,9 +497,6 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
         return std::unique_ptr<Proof<Engine>>(p); 
     }
     uint64_t *wtns_digits = out1.witness_digits;
-
-    // index in public input corresponding to derived challenge
-    uint32_t challenge_index = 1;
     
     // initialization
     typename Engine::FrElement round_random_factor;
@@ -516,21 +512,28 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
         round_wtns[i] = wtns_first[round_indexes[i]];
     }
 
-    std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement> round_result = execute_round(round_wtns, round_indexes_count, accumulator);
-
-    // buffer to hash challenge index + accumulator
-    uint8_t buffer[4 + 32];
-    uint8_t challenge[32];
-    
-    memcpy(buffer, &challenge_index, sizeof(uint32_t));
-    memcpy(buffer + 4, accumulator, 32 * sizeof(uint8_t));
-
-    FIPS202_KECCAK_256(buffer, 4 + 32, challenge);
+    std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement> round_result = execute_round(round_wtns, round_indexes_count);
     
     round_commitment = std::get<0>(round_result);
     round_random_factor = std::get<1>(round_result);
     delete[] round_wtns;
+    
+    // Load x and y coordinates of commitment to buffer
+    uint8_t buffer[2 * 32];
+    uint8_t challenge[32];
 
+    mpz_t coordinate_buffer;
+    mpz_init(coordinate_buffer);
+
+    E.f1.toMpz(coordinate_buffer, round_commitment.x);
+    mpz_export(buffer + 0, NULL, -1, 8, 1, 0, coordinate_buffer);
+
+    E.f1.toMpz(coordinate_buffer, round_commitment.y);
+    mpz_export(buffer + 32, NULL, -1, 8, 1, 0, coordinate_buffer);
+
+    FIPS202_KECCAK_256(buffer, 32*2, challenge);
+
+    //Load challenge bytes into FrElement to perform mod reduce
     typename Engine::FrElement rand;
     mpz_t x;
     mpz_init(x);
@@ -678,9 +681,6 @@ void VerificationKey<Engine>::fromJson(const json& key)
     }
 
     challenge_index = key["randIdx"];
-    
-    // Hardcode nonce value for now
-    memset(nonce, 0, 32);
 }
 
 template <typename Engine>
@@ -717,7 +717,7 @@ bool Verifier<Engine>::verify(Proof<Engine> &proof, InputsVector &inputs,
             E.fr.fromMontgomery(input, inputs[i]);
         }
         else {
-            input = derive_challenge(key.nonce, proof.round_commitment, challenge_index);
+            input = derive_challenge(proof.round_commitment, challenge_index);
         }
         
         typename Engine::G1Point p1;
@@ -764,29 +764,29 @@ bool Verifier<Engine>::verify(Proof<Engine> &proof, InputsVector &inputs,
 }
 
 template <typename Engine>
-typename Engine::FrElement Verifier<Engine>::derive_challenge(uint8_t *accumulator, typename Engine::G1PointAffine round_commitment, uint32_t challenge_index)
+typename Engine::FrElement Verifier<Engine>::derive_challenge(typename Engine::G1PointAffine round_commitment, uint32_t challenge_index)
 {
+    // Load x and y coordinates of commitment to buffer
     uint8_t buffer[2 * 32];
+    uint8_t challenge[32];
 
     mpz_t coordinate_buffer;
     mpz_init(coordinate_buffer);
 
     E.f1.toMpz(coordinate_buffer, round_commitment.x);
-    mpz_export(buffer + 32, NULL, -1, 8, 1, 0, coordinate_buffer);
+    mpz_export(buffer + 0, NULL, -1, 8, 1, 0, coordinate_buffer);
 
     E.f1.toMpz(coordinate_buffer, round_commitment.y);
-    mpz_export(buffer + 64, NULL, -1, 8, 1, 0, coordinate_buffer);
-    
-    FIPS202_KECCAK_256(buffer, 32*2, accumulator);
+    mpz_export(buffer + 32, NULL, -1, 8, 1, 0, coordinate_buffer);
 
-    uint8_t buffer1[4 + 32];
-    uint8_t challenge[32];
-    memcpy(buffer1, &challenge_index, sizeof(uint32_t));
-    memcpy(buffer1 + 4, accumulator, 32 * sizeof(uint8_t));
+    FIPS202_KECCAK_256(buffer, 32*2, challenge);
 
-    FIPS202_KECCAK_256(buffer1, 4 + 32, challenge);
-
+    // Load challenge bytes into FrElement to perform mod reduce
     typename Engine::FrElement rand;
+    mpz_t x;
+    mpz_init(x);
+    mpz_import(x, 32, 0, 1, -1, 0, challenge);
+    E.fr.fromMpz(rand, x);
 
     return rand;
 }

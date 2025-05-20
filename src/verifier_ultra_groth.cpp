@@ -65,7 +65,6 @@ static UltraGroth::VerificationKey<AltBn128::Engine>
 parse_key(const char *key_str)
 {
     UltraGroth::VerificationKey<AltBn128::Engine> key(AltBn128::Engine::engine);
-    memset(key.nonce, 0, 32);
 
     try {
         json key_json = json::parse(key_str);

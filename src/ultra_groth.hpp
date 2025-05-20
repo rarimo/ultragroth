@@ -45,7 +45,6 @@ namespace UltraGroth {
         typename Engine::G2PointAffine final_delta2;
         typename Engine::G2PointAffine round_delta2;
         std::vector<typename Engine::G1PointAffine> IC;
-        uint8_t nonce[32];
         uint32_t challenge_index;
 
         VerificationKey(Engine &_E) : E(_E) { }
@@ -78,7 +77,6 @@ namespace UltraGroth {
         uint32_t *final_round_indexes;
         uint32_t final_round_indexes_count;
         // Nonce and index in witness in which challenge will be written
-        uint8_t *nonce;
         uint32_t challenge_index;
         // Toxic waste wrapped into corresponding groups
         typename Engine::G1PointAffine &alpha1;
@@ -114,7 +112,6 @@ namespace UltraGroth {
             uint32_t _round_indexes_count,
             uint32_t *_final_round_indexes,
             uint32_t _final_round_indexes_count,
-            uint8_t  *_nonce,
             uint32_t _challenge_index,
             typename Engine::G1PointAffine &_alpha1,
             typename Engine::G1PointAffine &_beta1,
@@ -139,7 +136,6 @@ namespace UltraGroth {
             round_indexes_count(_round_indexes_count),
             final_round_indexes(_final_round_indexes),
             final_round_indexes_count(_final_round_indexes_count),
-            nonce(_nonce),
             challenge_index(_challenge_index),
             alpha1(_alpha1),
             beta1(_beta1),
@@ -163,12 +159,12 @@ namespace UltraGroth {
         }
 
         // Function to execute entire proving process
-        std::unique_ptr<Proof<Engine>> prove(uint8_t *accumulator, const uint8_t* bytes, size_t json_size);
+        std::unique_ptr<Proof<Engine>> prove(const uint8_t* bytes, size_t json_size);
 
         // Function to execute common round of proving process
         // Pointer to accumulator is passed to function; accumulator size is 32
         typename std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement>
-        execute_round(const typename Engine::FrElement *round_wtns, const uint64_t wtns_count, uint8_t *accumulator);
+        execute_round(const typename Engine::FrElement *round_wtns, const uint64_t wtns_count);
 
         // Function to execute final round of proving process
         std::tuple<typename Engine::G1PointAffine, typename Engine::G2PointAffine, typename Engine::G1PointAffine>
@@ -187,7 +183,6 @@ namespace UltraGroth {
         uint32_t round_indexes_count,
         void *final_round_indexes,
         uint32_t final_round_indexes_count,
-        void *nonce, 
         uint32_t challenge_index,
         void *vk_alpha1,
         void *vk_beta1,
@@ -225,7 +220,7 @@ namespace UltraGroth {
 
     private:
 
-        typename Engine::FrElement derive_challenge(uint8_t *accumulator, typename Engine::G1PointAffine round_commitment, uint32_t challenge_index);
+        typename Engine::FrElement derive_challenge(typename Engine::G1PointAffine round_commitment, uint32_t challenge_index);
 
         bool pairingCheck(G1PointArray& g1, G2PointArray& g2);
 
