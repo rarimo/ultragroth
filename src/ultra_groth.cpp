@@ -69,14 +69,6 @@ static LookupInput compute_lookup(RoundOneOut out, RawFr::Element rand) {
     return LookupInput{inv1_digits, inv2_digits, prod_digits};
 }
 
-//static void keccak256_hash(const uint8_t *buffer, const size_t len, uint8_t *out_hash) {
-//    EVP_MD_CTX *ctx = EVP_MD_CTX_new();
-//    EVP_DigestInit_ex(ctx, EVP_sha3_256(), nullptr);
-//    EVP_DigestUpdate(ctx, buffer, len);
-//    EVP_DigestFinal_ex(ctx, out_hash, nullptr);
-//    EVP_MD_CTX_free(ctx);
-//}
-
 template <typename Engine>
 std::unique_ptr<Prover<Engine>> makeProver(
     uint32_t nVars,
@@ -567,7 +559,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     }
 
     write_public_inputs(witness, nVars, nPublic);
-    witness_from_digits(witness, nVars);
+    //witness_from_digits(witness, nVars);
 
     auto final_round_result = execute_final_round(
         wtns,
@@ -685,9 +677,10 @@ void VerificationKey<Engine>::fromJson(const json& key)
         IC.push_back(point);
     }
 
+    challenge_index = key["randIdx"];
+    
     // Hardcode nonce value for now
     memset(nonce, 0, 32);
-    challenge_index = key["randIdx"];
 }
 
 template <typename Engine>
