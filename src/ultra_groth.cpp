@@ -43,10 +43,10 @@ typename Engine::FrElement derive_challenge(Engine& E, typename Engine::G1PointA
     mpz_init(coordinate_buffer);
 
     E.f1.toMpz(coordinate_buffer, round_commitment.x);
-    mpz_export(buffer + 0, NULL, -1, 8, 1, 0, coordinate_buffer);
+    mpz_export(buffer + 0, NULL, 1, 8, 1, 0, coordinate_buffer);
 
     E.f1.toMpz(coordinate_buffer, round_commitment.y);
-    mpz_export(buffer + 32, NULL, -1, 8, 1, 0, coordinate_buffer);
+    mpz_export(buffer + 32, NULL, 1, 8, 1, 0, coordinate_buffer);
 
     FIPS202_KECCAK_256(buffer, 32*2, challenge);
 
