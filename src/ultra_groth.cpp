@@ -32,6 +32,33 @@ static void copy_digits(RawFr::Element a, uint64_t *dest) {
         dest[i] = tmp.v[i];
     }
 }
+template <typename Engine>
+typename Engine::FrElement derive_challenge(Engine& E, typename Engine::G1PointAffine round_commitment)
+{
+    // Load x and y coordinates of commitment to buffer
+    uint8_t buffer[2 * 32];
+    uint8_t challenge[32];
+
+    mpz_t coordinate_buffer;
+    mpz_init(coordinate_buffer);
+
+    E.f1.toMpz(coordinate_buffer, round_commitment.x);
+    mpz_export(buffer + 0, NULL, -1, 8, 1, 0, coordinate_buffer);
+
+    E.f1.toMpz(coordinate_buffer, round_commitment.y);
+    mpz_export(buffer + 32, NULL, -1, 8, 1, 0, coordinate_buffer);
+
+    FIPS202_KECCAK_256(buffer, 32*2, challenge);
+
+    // Load challenge bytes into FrElement to perform mod reduce
+    typename Engine::FrElement rand;
+    mpz_t x;
+    mpz_init(x);
+    mpz_import(x, 32, 0, 1, -1, 0, challenge);
+    E.fr.fromMpz(rand, x);
+
+    return rand;
+}
 
 /// Ownership of this arrays will be taken by boxes inside Rust, so there is no need to destroy them
 struct LookupInput {
@@ -244,22 +271,6 @@ Prover<Engine>::execute_round(
     // Convert commitment back to affine
     typename Engine::G1PointAffine commitment;
     E.g1.copy(commitment, commitment_projective);
-    
-    //// Load x and y coordinates of commitment to buffer
-    //uint8_t buffer[2 * 32] {};
-//
-    //mpz_t coordinate_buffer1;
-    //mpz_init(coordinate_buffer1);
-    //mpz_t coordinate_buffer2;
-    //mpz_init(coordinate_buffer2);
-//
-    //E.f1.toMpz(coordinate_buffer1, commitment.x);
-    //mpz_export(buffer + 0, NULL, -1, 8, 1, 0, coordinate_buffer1);
-//
-    //E.f1.toMpz(coordinate_buffer2, commitment.y);
-    //mpz_export(buffer + 32, NULL, -1, 8, 1, 0, coordinate_buffer2);
-//
-    //FIPS202_KECCAK_256(buffer, 32*2, accumulator);
 
     return {commitment, r};
 }
@@ -518,27 +529,13 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     round_random_factor = std::get<1>(round_result);
     delete[] round_wtns;
     
-    // Load x and y coordinates of commitment to buffer
-    uint8_t buffer[2 * 32];
+    // Hash point to derive challenge
+    typename Engine::FrElement rand = derive_challenge<Engine>(E, round_commitment);
+
+    // Unload challenge bytes from FrElement
     uint8_t challenge[32];
-
-    mpz_t coordinate_buffer;
-    mpz_init(coordinate_buffer);
-
-    E.f1.toMpz(coordinate_buffer, round_commitment.x);
-    mpz_export(buffer + 0, NULL, 1, 8, 1, 0, coordinate_buffer);
-
-    E.f1.toMpz(coordinate_buffer, round_commitment.y);
-    mpz_export(buffer + 32, NULL, 1, 8, 1, 0, coordinate_buffer);
-
-    FIPS202_KECCAK_256(buffer, 32*2, challenge);
-
-    //Load challenge bytes into FrElement to perform mod reduce
-    typename Engine::FrElement rand;
     mpz_t x;
     mpz_init(x);
-    mpz_import(x, 32, 0, 1, -1, 0, challenge);
-    E.fr.fromMpz(rand, x);
     E.fr.toMpz(x, rand);
     mpz_export(challenge, 0, -1, 8, -1, 0, x);
 
@@ -717,7 +714,7 @@ bool Verifier<Engine>::verify(Proof<Engine> &proof, InputsVector &inputs,
             E.fr.fromMontgomery(input, inputs[i]);
         }
         else {
-            input = derive_challenge(proof.round_commitment, challenge_index);
+            input = derive_challenge<Engine>(E, proof.round_commitment);
         }
         
         typename Engine::G1Point p1;
@@ -761,34 +758,6 @@ bool Verifier<Engine>::verify(Proof<Engine> &proof, InputsVector &inputs,
     G2PointArray g2 = {pB, pBeta, pGamma, pFinalDelta, pRoundDelta};
 
     return pairingCheck(g1, g2);
-}
-
-template <typename Engine>
-typename Engine::FrElement Verifier<Engine>::derive_challenge(typename Engine::G1PointAffine round_commitment, uint32_t challenge_index)
-{
-    // Load x and y coordinates of commitment to buffer
-    uint8_t buffer[2 * 32];
-    uint8_t challenge[32];
-
-    mpz_t coordinate_buffer;
-    mpz_init(coordinate_buffer);
-
-    E.f1.toMpz(coordinate_buffer, round_commitment.x);
-    mpz_export(buffer + 0, NULL, -1, 8, 1, 0, coordinate_buffer);
-
-    E.f1.toMpz(coordinate_buffer, round_commitment.y);
-    mpz_export(buffer + 32, NULL, -1, 8, 1, 0, coordinate_buffer);
-
-    FIPS202_KECCAK_256(buffer, 32*2, challenge);
-
-    // Load challenge bytes into FrElement to perform mod reduce
-    typename Engine::FrElement rand;
-    mpz_t x;
-    mpz_init(x);
-    mpz_import(x, 32, 0, 1, -1, 0, challenge);
-    E.fr.fromMpz(rand, x);
-
-    return rand;
 }
 
 template <typename Engine>

@@ -63,6 +63,9 @@ namespace UltraGroth {
 #pragma pack(pop)
 
     template <typename Engine>
+    typename Engine::FrElement derive_challenge(Engine& E, typename Engine::G1PointAffine round_commitment);
+
+    template <typename Engine>
     class Prover {
 
         Engine &E;
@@ -220,7 +223,7 @@ namespace UltraGroth {
 
     private:
 
-        typename Engine::FrElement derive_challenge(typename Engine::G1PointAffine round_commitment, uint32_t challenge_index);
+        //typename Engine::FrElement derive_challenge(typename Engine::G1PointAffine round_commitment);
 
         bool pairingCheck(G1PointArray& g1, G2PointArray& g2);
 
