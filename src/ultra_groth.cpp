@@ -547,7 +547,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
         return std::unique_ptr<Proof<Engine>>(p);
     }
     uint64_t *witness = round2out.witness_digits;
-    //witness_from_digits(witness);
+    witness_from_digits(witness);
 
     typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_indexes_count];
     typename Engine::FrElement *wtns = (typename Engine::FrElement *)witness;
@@ -558,8 +558,8 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
         final_round_wtns[i] = wtns[index]; 
     }
 
-    write_public_inputs(witness, nVars, nPublic);
-    //witness_from_digits(witness, nVars);
+    write_public_inputs(witness, nVars, nPublic, challenge_index);
+    witness_from_digits(witness, nVars);
 
     auto final_round_result = execute_final_round(
         wtns,

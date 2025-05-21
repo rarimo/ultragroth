@@ -18,15 +18,15 @@ if (DEFINED CMAKE_LIB_PATH)
     set(BIONETTA_PROVER_LIB ${CMAKE_LIB_PATH})
 
 elseif(UNIX AND NOT APPLE)
-    set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/libtest.a)
+    set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/libtest_mnist.a)
 
 # Mac OS
 elseif(APPLE)
-    set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/libtest.a)
+    set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/libtest_mnist.a)
 
 # Windows
 else()
-    set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/libtest.a)
+    set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/libtest_mnist.a)
 endif()
 
 
