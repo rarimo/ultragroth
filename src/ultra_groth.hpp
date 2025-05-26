@@ -45,7 +45,8 @@ namespace UltraGroth {
         typename Engine::G2PointAffine final_delta2;
         typename Engine::G2PointAffine round_delta2;
         std::vector<typename Engine::G1PointAffine> IC;
-        uint32_t challenge_index;
+        //uint32_t challenge_index;
+        typename Engine::G1PointAffine ic_rand;
 
         VerificationKey(Engine &_E) : E(_E) { }
         void fromJson(const json &proof);

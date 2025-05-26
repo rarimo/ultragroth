@@ -13,8 +13,6 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 
-#include <nlohmann/json.hpp>
-
 #include "random_generator.hpp"
 #include "misc.hpp"
 #include "rounds_extern.h"
@@ -547,7 +545,6 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
         return std::unique_ptr<Proof<Engine>>(p);
     }
     uint64_t *witness = round2out.witness_digits;
-    witness_from_digits(witness);
 
     typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_indexes_count];
     typename Engine::FrElement *wtns = (typename Engine::FrElement *)witness;
@@ -676,8 +673,8 @@ void VerificationKey<Engine>::fromJson(const json& key)
         G1PointAffineFromJson(E, point, el.value());
         IC.push_back(point);
     }
-
-    challenge_index = key["randIdx"];
+    G1PointAffineFromJson(E, ic_rand, key["IC_rand"]);
+    //challenge_index = key["randIdx"];
 }
 
 template <typename Engine>
@@ -700,29 +697,26 @@ template <typename Engine>
 bool Verifier<Engine>::verify(Proof<Engine> &proof, InputsVector &inputs,
                              VerificationKey<Engine> &key)
 {
-    if (inputs.size() + 1 != key.IC.size()) {
-        throw std::invalid_argument("len(inputs)+1 != len(vk.IC)");
+    if (inputs.size()!= key.IC.size()) {
+        throw std::invalid_argument("len(inputs) != len(vk.IC)");
     }
 
     typename Engine::G1Point vkX = E.g1.zero();
-    uint32_t challenge_index = key.challenge_index;
 
     for (int i = 0; i < inputs.size(); i++) {
-        typename Engine::FrElement input;
 
-        if (i != challenge_index) {
-            E.fr.fromMontgomery(input, inputs[i]);
-        }
-        else {
-            input = derive_challenge<Engine>(E, proof.round_commitment);
-        }
-        
+        typename Engine::FrElement input;
         typename Engine::G1Point p1;
         E.g1.mulByScalar(p1, key.IC[i+1], (uint8_t *)&input, sizeof(input));
         E.g1.add(vkX, vkX, p1);
     }
 
+    typename Engine::FrElement derived_rand = derive_challenge(E, proof.round_commitment);
+    typename Engine::G1Point p;
+    E.g1.mulByScalar(p, key.ic_rand, (uint8_t *)&derived_rand, sizeof(derived_rand));
+    
     E.g1.add(vkX, vkX, key.IC[0]);
+    E.g1.add(vkX, vkX, p);
 
     typename Engine::G1Point pA;
     E.g1.copy(pA, proof.A);
