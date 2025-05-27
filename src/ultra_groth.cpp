@@ -555,6 +555,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
         final_round_wtns[i] = wtns[index]; 
     }
 
+    std::cout << "challenge_index: " << challenge_index << std::endl;
     write_public_inputs(witness, nVars, nPublic, challenge_index);
     witness_from_digits(witness, nVars);
 
@@ -697,23 +698,31 @@ template <typename Engine>
 bool Verifier<Engine>::verify(Proof<Engine> &proof, InputsVector &inputs,
                              VerificationKey<Engine> &key)
 {
-    if (inputs.size()!= key.IC.size()) {
+    if (inputs.size() + 1!= key.IC.size()) {
         throw std::invalid_argument("len(inputs) != len(vk.IC)");
     }
 
     typename Engine::G1Point vkX = E.g1.zero();
 
+    std::cout << "inputs.size(): " << inputs.size() << std::endl;
     for (int i = 0; i < inputs.size(); i++) {
 
         typename Engine::FrElement input;
+
+        E.fr.fromMontgomery(input, inputs[i]);
+
         typename Engine::G1Point p1;
         E.g1.mulByScalar(p1, key.IC[i+1], (uint8_t *)&input, sizeof(input));
         E.g1.add(vkX, vkX, p1);
     }
 
     typename Engine::FrElement derived_rand = derive_challenge(E, proof.round_commitment);
+
+    typename Engine::FrElement rand_casted;
+    E.fr.fromMontgomery(rand_casted, derived_rand);
+
     typename Engine::G1Point p;
-    E.g1.mulByScalar(p, key.ic_rand, (uint8_t *)&derived_rand, sizeof(derived_rand));
+    E.g1.mulByScalar(p, key.ic_rand, (uint8_t *)&rand_casted, sizeof(derived_rand));
     
     E.g1.add(vkX, vkX, key.IC[0]);
     E.g1.add(vkX, vkX, p);
