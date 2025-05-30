@@ -1,3 +1,18 @@
+sketches.cpp
+.vscode/
+bionetta-prover/
+
+*.zkey
+*.json
+*.sym
+*.wtns
+*.Identifier
+*.r1cs
+wtns.txt
+
+prover_inputs.txt
+input_logs.txt
+
 # Logs
 logs
 *.log
@@ -50,6 +65,8 @@ typings/
 
 # Output of 'npm pack'
 *.tgz
+
+*.a
 
 # Yarn Integrity file
 .yarn-integrity

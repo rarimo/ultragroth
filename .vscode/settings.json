@@ -71,6 +71,28 @@
         "csignal": "cpp",
         "set": "cpp",
         "valarray": "cpp",
-        "variant": "cpp"
-    }
+        "variant": "cpp",
+        "any": "cpp",
+        "codecvt": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp",
+        "numbers": "cpp",
+        "ranges": "cpp",
+        "semaphore": "cpp",
+        "span": "cpp",
+        "stop_token": "cpp",
+        "__bit_reference": "cpp",
+        "__split_buffer": "cpp",
+        "__verbose_abort": "cpp",
+        "ios": "cpp",
+        "charconv": "cpp",
+        "format": "cpp",
+        "__locale": "cpp",
+        "__threading_support": "cpp",
+        "locale": "cpp",
+        "print": "cpp",
+        "strstream": "cpp",
+        "keccak256.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "disabled"
 }

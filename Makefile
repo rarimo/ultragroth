@@ -3,7 +3,7 @@
 #Build targets
 host:
 	rm -rf build_prover && mkdir build_prover && cd build_prover && \
-	cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../package && \
+	cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../package $(EXTRA_CMAKE_ARGS) && \
 	make -j$(nproc) -vvv && make install
 
 host_noasm:

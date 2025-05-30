@@ -3,22 +3,22 @@
 #include <alt_bn128.hpp>
 #include <nlohmann/json.hpp>
 
-#include "verifier.h"
-#include "groth16.hpp"
+#include "verifier_ultra_groth.hpp"
+#include "ultra_groth.hpp"
 
 using json = nlohmann::json;
 
-static Groth16::Proof<AltBn128::Engine>
+static UltraGroth::Proof<AltBn128::Engine>
 parse_proof(const char *proof_str)
 {
-    Groth16::Proof<AltBn128::Engine> proof(AltBn128::Engine::engine);
+    UltraGroth::Proof<AltBn128::Engine> proof(AltBn128::Engine::engine);
 
     try {
         json proof_json = json::parse(proof_str);
 
         std::string protocol = proof_json["protocol"].template get<std::string>();
 
-        if (protocol != "groth16") {
+        if (protocol != "ultragroth") {
             throw std::invalid_argument("invalid proof data");
         }
 
@@ -61,10 +61,10 @@ parse_inputs(const char *inputs_str)
     return inputs;
 }
 
-static Groth16::VerificationKey<AltBn128::Engine>
+static UltraGroth::VerificationKey<AltBn128::Engine>
 parse_key(const char *key_str)
 {
-    Groth16::VerificationKey<AltBn128::Engine> key(AltBn128::Engine::engine);
+    UltraGroth::VerificationKey<AltBn128::Engine> key(AltBn128::Engine::engine);
 
     try {
         json key_json = json::parse(key_str);
@@ -73,14 +73,14 @@ parse_key(const char *key_str)
         auto curve    = key_json["curve"].template get<std::string>();
         auto nPublic  = key_json["nPublic"].template get<int64_t>();
 
-        if (protocol != "groth16" || curve != "bn128") {
-            throw std::invalid_argument("invalid verification key data");
+        if (protocol != "ultragroth" || curve != "bn128") {
+            throw std::invalid_argument("invalid verification key data: protocol does not match");
         }
 
         key.fromJson(key_json);
 
         if (key.IC.empty()) {
-            throw std::invalid_argument("invalid verification key data");
+            throw std::invalid_argument("invalid verification key data: IC is empty");
         }
 
     } catch(...) {
@@ -91,19 +91,20 @@ parse_key(const char *key_str)
 }
 
 int
-groth16_verify(const char    *proof,
-               const char    *inputs,
-               const char    *verification_key,
-               char          *error_msg,
-               unsigned long  error_msg_maxsize)
-{
+ultra_groth_verify(
+    const char    *proof,
+    const char    *inputs,
+    const char    *verification_key,
+    char          *error_msg,
+    unsigned long  error_msg_maxsize
+) {
     try {
 
         auto proof_value = parse_proof(proof);
         auto inputs_value = parse_inputs(inputs);
         auto key_value = parse_key(verification_key);
 
-        Groth16::Verifier<AltBn128::Engine> verifier;
+        UltraGroth::Verifier<AltBn128::Engine> verifier;
 
         bool valid = verifier.verify(proof_value, inputs_value, key_value);
 

@@ -26,6 +26,6 @@ private:
     int     fd;
 };
 
-}
+} // Namespace
 
 #endif // FILELOADER_HPP

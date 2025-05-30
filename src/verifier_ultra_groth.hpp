@@ -1,9 +1,5 @@
-#ifndef VERIFIER_HPP
-#define VERIFIER_HPP
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef VERIFIER_ULTRA_GROTH_HPP
+#define VERIFIER_ULTRA_GROTH_HPP
 
 //Error codes returned by the functions.
 #define VERIFIER_VALID_PROOF        0x0
@@ -20,15 +16,12 @@ extern "C" {
  */
 
 int
-groth16_verify(const char    *proof,
-               const char    *inputs,
-               const char    *verification_key,
-               char          *error_msg,
-               unsigned long  error_msg_maxsize);
-
-#ifdef __cplusplus
-}
-#endif
-
+ultra_groth_verify(
+    const char    *proof,
+    const char    *inputs,
+    const char    *verification_key,
+    char          *error_msg,
+    unsigned long  error_msg_maxsize
+);
 
 #endif // VERIFIER_HPP

@@ -2,7 +2,8 @@
 #include <stdexcept>
 
 #include "fileloader.hpp"
-#include "verifier.h"
+#include "verifier_ultra_groth.hpp"
+
 
 int main(int argc, char **argv)
 {
@@ -23,10 +24,12 @@ int main(int argc, char **argv)
 
         char errorMessage[256];
 
-        const int error = groth16_verify(proof.dataAsString().c_str(),
-                                         inputs.dataAsString().c_str(),
-                                         key.dataAsString().c_str(),
-                                         errorMessage, sizeof(errorMessage));
+        const int error = ultra_groth_verify(
+            proof.dataAsString().c_str(),
+            inputs.dataAsString().c_str(),
+            key.dataAsString().c_str(),
+            errorMessage, sizeof(errorMessage)
+        );
 
         if (error == VERIFIER_VALID_PROOF) {
 
