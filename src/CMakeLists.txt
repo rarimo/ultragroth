@@ -94,15 +94,13 @@ set(
     keccak256.h
     binfile_utils.hpp
     binfile_utils.cpp
-    wtns_utils.hpp
-    wtns_utils.cpp
     zkey_utils.hpp
     zkey_utils.cpp
     fileloader.cpp
     fileloader.hpp
     rounds_extern.h
     prover_ultra_groth.cpp
-    prover_ultra_groth.h
+    prover_ultra_groth.hpp
     verifier_ultra_groth.cpp
     verifier_ultra_groth.hpp
     ../depends/ffiasm/c/misc.cpp
