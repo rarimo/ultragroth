@@ -18,6 +18,42 @@ using json = nlohmann::json;
 
 namespace UltraGroth {
 
+    template <typename Engine> 
+    struct LookupWtns {
+
+        typename Engine::FrElement *signals;
+        uint64_t signals_len;
+
+        uint32_t *chunks;
+        uint64_t chunks_len;
+
+        uint32_t *frequencies;
+        uint64_t frequencies_len;
+
+        uint32_t *wtns_indxs;
+        uint64_t wtns_indxs_len;
+
+        uint32_t *push_indxs;
+        uint64_t push_indxs_len;
+
+        ~LookupWtns() {
+
+            delete[] signals;
+            delete[] chunks;
+            delete[] frequencies;
+            delete[] wtns_indxs;
+            delete[] push_indxs;
+        };
+
+        /// Frees memory related to lookup computation
+        void clean_lookups() {
+            delete[] chunks;
+            delete[] frequencies;
+            delete[] wtns_indxs;
+            delete[] push_indxs;
+        };
+    };
+
     template <typename Engine>
     class Proof {
         Engine &E;
@@ -163,7 +199,7 @@ namespace UltraGroth {
         }
 
         // Function to execute entire proving process
-        std::unique_ptr<Proof<Engine>> prove(const uint8_t* bytes, size_t json_size);
+        std::unique_ptr<Proof<Engine>> prove(LookupWtns<Engine> wtnsData);
 
         // Function to execute common round of proving process
         // Pointer to accumulator is passed to function; accumulator size is 32
