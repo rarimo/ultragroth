@@ -78,11 +78,14 @@ PrimeIsValid(mpz_srcptr prime)
 }
 
 static std::string
-BuildPublicString(AltBn128::FrElement *wtnsData, uint32_t nPublic)
+BuildPublicString(AltBn128::FrElement *wtnsData, uint32_t nPublic, uint32_t rand_indx)
 {
     json jsonPublic;
     AltBn128::FrElement aux;
-    for (u_int32_t i=1; i<= nPublic; i++) {
+    for (uint32_t i=1; i<= nPublic; i++) {
+        if (i == rand_indx) {
+            continue;
+        }
         AltBn128::Fr.toMontgomery(aux, wtnsData[i]);
         jsonPublic.push_back(AltBn128::Fr.toString(aux));
     }
@@ -203,7 +206,7 @@ public:
         auto proof = prover->prove(&wtnsData);
 
         stringProof = proof->toJson().dump();
-        stringPublic = BuildPublicString(wtnsData.signals, zkeyHeader->nPublic);
+        stringPublic = BuildPublicString(wtnsData.signals, zkeyHeader->nPublic, zkeyHeader->rand_indx);
         
     }
 
