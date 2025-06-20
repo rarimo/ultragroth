@@ -19,6 +19,7 @@ using json = nlohmann::json;
 namespace UltraGroth {
 
     template <typename Engine> 
+    // TODO: separate lookup related info from signals to clean up memory after it's not needed anymore
     struct LookupWtns {
 
         typename Engine::FrElement *signals;

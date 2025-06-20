@@ -58,13 +58,8 @@ typename Engine::FrElement derive_challenge(Engine& E, typename Engine::G1PointA
     return rand;
 }
 
-/// Ownership of this arrays will be taken by boxes inside Rust, so there is no need to destroy them
-struct LookupInput {
-    uint64_t *inv1;
-    uint64_t *inv2;
-    uint64_t *prod;
-};
 
+/// Computes lookup signals and writes them to witness
 static void compute_lookup(LookupWtns<AltBn128::Engine> *wtns, RawFr::Element rand) {
     uint32_t *chunks = wtns->chunks;
     uint32_t *frequencies = wtns->frequencies;
@@ -163,107 +158,6 @@ std::unique_ptr<Prover<Engine>> makeProver(
         (typename Engine::G1PointAffine *)pointsH
     );
     return std::unique_ptr< Prover<Engine> >(p);
-}
-
-template <typename Engine> void Prover<Engine>::debug_prover_inputs()
-{
-    std::cout << std::endl;
-
-    std::cout << "nVars: " << nVars << std::endl;
-    std::cout << "nPublic: " << nPublic << std::endl;
-    std::cout << "domainSize: " << domainSize << std::endl;
-    std::cout << "nCoefs: " << nCoefs << std::endl;
-
-    std::string round_indexes_str = "";
-    for (int i = 0; i < round_indexes_count; i++) {
-        round_indexes_str += "round_indexes[" + std::to_string(i) + "] = ";
-        round_indexes_str += std::to_string(round_indexes[i]);
-        round_indexes_str += "\r\n";
-    }
-    std::cout << "Round indexes count: " << round_indexes_count << std::endl;
-    std::cout << round_indexes_str << std::endl;
-
-    std::string final_round_indexes_str = "";
-    for (int i = 0; i < final_round_indexes_count; i++) {
-        final_round_indexes_str += "final_round_indexes[" + std::to_string(i) + "] = ";
-        final_round_indexes_str += std::to_string(final_round_indexes[i]);
-        final_round_indexes_str += "\r\n";
-    }
-    std::cout << "Round indexes count: " << final_round_indexes_count << std::endl;
-    std::cout << final_round_indexes_str << std::endl;
-
-    std::cout << "vk_alpha1: " << E.g1.toString(alpha1) << std::endl;
-    std::cout << "vk_beta1: " << E.g1.toString(beta1) << std::endl;
-    std::cout << "vk_beta2: " << E.g2.toString(beta2) << std::endl;
-    std::cout << "vk_final_delta1: " << E.g1.toString(final_delta1) << std::endl;
-    std::cout << "vk_final_delta2: " << E.g2.toString(final_delta2) << std::endl;
-    std::cout << "vk_round_delta1: " << E.g1.toString(round_delta1) << std::endl;
-
-    std::cout << std::endl;
-
-    std::cout << "Points A: " << std::endl;
-    std::string pointsA_str = "";
-    for (int i = 0; i < nVars; i++) {
-        pointsA_str += "pointsA[" + std::to_string(i) + "] = ";
-        pointsA_str += E.g1.toString(pointsA[i]);
-        pointsA_str += "\r\n";
-    }
-    std::cout << pointsA_str << std::endl;
-
-    std::cout << "Points B1: " << std::endl;
-    std::string pointsB1_str = "";
-    for (int i = 0; i < nVars; i++) {
-        pointsB1_str += "pointsB1[" + std::to_string(i) + "] = ";
-        pointsB1_str += E.g1.toString(pointsB1[i]);
-        pointsB1_str += "\r\n";
-    }
-    
-    std::cout << pointsB1_str << std::endl;
-
-    std::cout << "Points B2: " << std::endl;
-    std::string pointsB2_str = "";
-    for (int i = 0; i < nVars; i++) {
-        pointsB2_str += "pointsB2[" + std::to_string(i) + "] = ";
-        pointsB2_str += E.g2.toString(pointsB2[i]);
-        pointsB2_str += "\r\n";
-    }
-    std::cout << pointsB2_str << std::endl;
-
-    std::cout << "Round points C1: " << std::endl;
-    std::string round_points_str = "";
-    for (int i = 0; i < round_indexes_count; i++) {
-        round_points_str += "round_pointsC[" + std::to_string(i) + "] = ";
-        round_points_str += E.g1.toString(round_pointsC[i]);
-        round_points_str += "\r\n";
-    }
-    std::cout << round_points_str << std::endl;
-
-    std::cout << "Final points C1: " << std::endl;
-    std::string final_round_points_str = "";
-    for (int i = 0; i < final_round_indexes_count; i++) {
-        final_round_points_str += "final_pointsC[" + std::to_string(i) + "] = ";
-        final_round_points_str += E.g1.toString(final_pointsC[i]);
-        final_round_points_str += "\r\n";
-    }
-    std::cout << final_round_points_str << std::endl;
-
-    std::cout << std::endl;
-
-    std::cout << "Points A final round: " << std::endl;
-    std::string final_round_pointsA_str = "";
-    for (int i = 0; i < final_round_indexes_count; i++) {
-        final_round_pointsA_str += "final_pointsA[" + std::to_string(i) + "] = ";
-        final_round_pointsA_str += E.g1.toString(pointsA[final_round_indexes[i]]);
-        final_round_pointsA_str += E.g1.toString(pointsB1[final_round_indexes[i]]);
-        final_round_pointsA_str += "\r\n";
-    }
-    std::cout << final_round_pointsA_str << std::endl << std::endl;
-}
-
-static void print(uint8_t *array, uint32_t length){
-    for (uint32_t i = 0; i < length; i++){
-        std::cout << std::to_string(array[i]) << ", ";
-    }
 }
 
 template <typename Engine>
@@ -551,8 +445,6 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
         uint32_t index = final_round_indexes[i];
         final_round_wtns[i] = wtnsData->signals[index]; 
     }
-
-    std::cout << "challenge_index: " << challenge_index << std::endl;
 
     auto final_round_result = execute_final_round(
         wtnsData->signals,

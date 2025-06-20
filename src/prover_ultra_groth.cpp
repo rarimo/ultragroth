@@ -83,6 +83,7 @@ BuildPublicString(AltBn128::FrElement *wtnsData, uint32_t nPublic, uint32_t rand
     json jsonPublic;
     AltBn128::FrElement aux;
     for (uint32_t i=1; i<= nPublic; i++) {
+        // signal corresponding to rand index is skipped because it derived from rounds commitments hash during verification
         if (i == rand_indx) {
             continue;
         }
