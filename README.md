@@ -74,7 +74,7 @@ by this one
 
 ### IMPORTANT NOTE
 
-This implementation works correctly ONLY with circuits compiled in Bionetta SDK infrastructure - `.zkey` should be generated using our [SnarkJS](https://github.com/rarimo/ultragroth-snarkjs/tree/dev) fork and witness files from our [custon witness gen](https://github.com/rarimo/bionetta-witness-generator);
+This implementation works correctly ONLY with circuits compiled in Bionetta SDK infrastructure - `.zkey` should be generated using our [SnarkJS](https://github.com/rarimo/ultragroth-snarkjs/tree/dev) fork and witness files from our [custom witness gen](https://github.com/rarimo/bionetta-witness-generator);
 
 Use 
 
