@@ -94,6 +94,8 @@ set(
     keccak256.h
     binfile_utils.hpp
     binfile_utils.cpp
+    wtns_utils.hpp
+    wtns_utils.cpp
     zkey_utils.hpp
     zkey_utils.cpp
     fileloader.cpp

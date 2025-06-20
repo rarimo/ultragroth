@@ -65,12 +65,12 @@ struct LookupInput {
     uint64_t *prod;
 };
 
-static LookupInput compute_lookup(RoundOneOut out, RawFr::Element rand) {
-
-    uint32_t *chunks = out.chunks;
-    uint32_t *frequencies = out.frequencies;
-    uint32_t chunks_total = out.chunks_total;
-    uint32_t lookup_size = out.lookup_size;
+static void compute_lookup(LookupWtns<AltBn128::Engine> *wtns, RawFr::Element rand) {
+    uint32_t *chunks = wtns->chunks;
+    uint32_t *frequencies = wtns->frequencies;
+    // convert from bytes count
+    uint32_t chunks_total = wtns->chunks_len >> 2;
+    uint32_t lookup_size = wtns->frequencies_len >> 2;
 
     uint64_t *inv1_digits = new uint64_t[chunks_total << 2];
     uint64_t *inv2_digits = new uint64_t[lookup_size << 2];
@@ -88,10 +88,28 @@ static LookupInput compute_lookup(RoundOneOut out, RawFr::Element rand) {
     for (int i = 0; i < chunks_total; i++) {
         memcpy(&inv1_digits[i << 2], &inv2_digits[chunks[i] << 2], sizeof(uint64_t) * 4);
     }
-    uint64_t *rand_digits = new uint64_t[4];
+    uint64_t rand_digits[4];
     copy_digits(rand, rand_digits);
 
-    return LookupInput{inv1_digits, inv2_digits, prod_digits};
+    uint64_t offset = 0;
+    uint64_t *push_vector = new uint64_t[(2 * lookup_size + chunks_total + 1) * 4];
+
+    memcpy(&push_vector[offset], rand_digits, 32);
+    offset += 4;
+    memcpy(&push_vector[offset], inv1_digits, chunks_total * 4 * sizeof(uint64_t));
+    offset += chunks_total * 4;
+    memcpy(&push_vector[offset], inv2_digits, lookup_size * 4 * sizeof(uint64_t));
+    offset += lookup_size * 4;
+    memcpy(&push_vector[offset],prod_digits, lookup_size * 4 * sizeof(uint64_t));
+    offset += lookup_size * 4;
+
+    for (uint32_t i = 0; i < (wtns->wtns_indxs_len >> 2) /*converted from size in bytes*/; i++) {
+
+        uint32_t wtns_ind = wtns->wtns_indxs[i];
+        uint32_t push_ind = wtns->push_indxs[i];
+
+        memcpy(&wtns->signals[wtns_ind], &push_vector[push_ind << 2], 4 * sizeof(uint64_t));
+    }
 }
 
 template <typename Engine>
@@ -490,22 +508,12 @@ Prover<Engine>::execute_final_round(
 
 template <typename Engine>
 std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
-    const uint8_t* bytes,
-    size_t json_size
+    LookupWtns<Engine> *wtnsData
 ) {
+
     Proof<Engine> *p = new Proof<Engine>(Engine::engine);
     p->error = nullptr;
     p->error_size = 0;
-
-    // 1. Call round function from Rust code
-    // Get from rust code uint64_t *wtns, uint32_t *wtns_indexes, uint32_t wtns_count
-    RoundOneOut out1 = round1(bytes, json_size);
-    if (out1.error_size > 0) {
-        p->error = out1.error;
-        p->error_size = out1.error_size;
-        return std::unique_ptr<Proof<Engine>>(p); 
-    }
-    uint64_t *wtns_digits = out1.witness_digits;
     
     // initialization
     typename Engine::FrElement round_random_factor;
@@ -514,11 +522,8 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     // here cloning of appropriate part of witness for first round should happen
     typename Engine::FrElement *round_wtns = new typename Engine::FrElement[round_indexes_count];
 
-    // Probably change way to load elements for first round later
-    typename Engine::FrElement *wtns_first = (typename Engine::FrElement *)wtns_digits;
-
     for (uint32_t i = 0; i < round_indexes_count; i++) {
-        round_wtns[i] = wtns_first[round_indexes[i]];
+        round_wtns[i] = wtnsData->signals[round_indexes[i]];
     }
 
     std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement> round_result = execute_round(round_wtns, round_indexes_count);
@@ -537,38 +542,27 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     E.fr.toMpz(x, rand);
     mpz_export(challenge, 0, -1, 8, -1, 0, x);
 
-    LookupInput input = compute_lookup(out1, rand);
-    RoundTwoOut round2out = round2(wtns_digits, reinterpret_cast<uint64_t*>(challenge), input.inv1, input.inv2, input.prod);
-    if (out1.error_size > 0) {
-        p->error = round2out.error;
-        p->error_size = round2out.error_size;
-        return std::unique_ptr<Proof<Engine>>(p);
-    }
-    uint64_t *witness = round2out.witness_digits;
+    compute_lookup(wtnsData, rand);
 
     typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_indexes_count];
-    typename Engine::FrElement *wtns = (typename Engine::FrElement *)witness;
 
     // Convert witness from uint64 to FrElement
     for (uint32_t i = 0; i < final_round_indexes_count; i++) {
         uint32_t index = final_round_indexes[i];
-        final_round_wtns[i] = wtns[index]; 
+        final_round_wtns[i] = wtnsData->signals[index]; 
     }
 
     std::cout << "challenge_index: " << challenge_index << std::endl;
-    write_public_inputs(witness, nVars, nPublic, challenge_index);
-    witness_from_digits(witness, nVars);
 
     auto final_round_result = execute_final_round(
-        wtns,
+        wtnsData->signals,
         final_round_wtns,
         round_random_factor
     );
-
+    
+    //witness_from_digits((uint64_t *)wtnsData->signals, nVars);
     delete[] final_round_wtns;
-    free_witness(witness);
 
-    //Proof<Engine> *p = new Proof<Engine>(Engine::engine);
     E.g1.copy(p->A, std::get<0>(final_round_result));
     E.g2.copy(p->B, std::get<1>(final_round_result));
     E.g1.copy(p->final_commitment, std::get<2>(final_round_result));

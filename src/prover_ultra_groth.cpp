@@ -1,20 +1,43 @@
 #include <gmp.h>
 #include <string>
-#include <fstream>
 #include <cstring>
 #include <stdexcept>
 #include <alt_bn128.hpp>
 #include <nlohmann/json.hpp>
-
+#include "prover_ultra_groth.hpp"
 #include "ultra_groth.hpp"
 #include "zkey_utils.hpp"
 #include "wtns_utils.hpp"
 #include "binfile_utils.hpp"
 #include "fileloader.hpp"
 
-#include "prover_ultra_groth.hpp"
-#include <keccak256.h>
+using json = nlohmann::json;
 
+
+class ShortBufferException : public std::invalid_argument
+{
+public:
+    explicit ShortBufferException(const std::string &msg)
+        : std::invalid_argument(msg) {}
+};
+
+class InvalidWitnessLengthException : public std::invalid_argument
+{
+public:
+    explicit InvalidWitnessLengthException(const std::string &msg)
+        : std::invalid_argument(msg) {}
+};
+
+static void
+CopyError(
+    char                 *error_msg,
+    unsigned long long    error_msg_maxsize,
+    const std::exception &e)
+{
+    if (error_msg) {
+        strncpy(error_msg, e.what(), error_msg_maxsize);
+    }
+}
 
 static void
 CopyError(
@@ -27,15 +50,16 @@ CopyError(
     }
 }
 
-static void
-CopyError(
-    char                 *error_msg,
-    unsigned long long    error_msg_maxsize,
-    const std::exception &e)
+static unsigned long long
+ProofBufferMinSize()
 {
-    if (error_msg) {
-        strncpy(error_msg, e.what(), error_msg_maxsize);
-    }
+    return 1300;
+}
+
+static unsigned long long
+PublicBufferMinSize(unsigned long long count)
+{
+    return count * 82 + 4;
 }
 
 static bool
@@ -53,93 +77,64 @@ PrimeIsValid(mpz_srcptr prime)
     return is_valid;
 }
 
-static unsigned long long
-ProofBufferMinSize()
+static std::string
+BuildPublicString(AltBn128::FrElement *wtnsData, uint32_t nPublic)
 {
-    return 810;
-}
-
-static unsigned long long
-PublicBufferMinSize(unsigned long long count)
-{
-    return count * 82 + 4;
-}
-
-int
-ultragroth_public_size_for_zkey_buf(
-    const void          *zkey_buffer,
-    unsigned long long   zkey_size,
-    unsigned long long  *public_size,
-    char                *error_msg,
-    unsigned long long   error_msg_maxsize)
-{
-    try {
-        BinFileUtils::BinFile zkey(zkey_buffer, zkey_size, "zkey", 1);
-        auto zkeyHeader = ZKeyUtils::loadHeader(&zkey);
-
-        *public_size = PublicBufferMinSize(zkeyHeader->nPublic);
-
-    } catch (std::exception& e) {
-        CopyError(error_msg, error_msg_maxsize, e);
-        return PROVER_ERROR;
-
-    } catch (...) {
-        CopyError(error_msg, error_msg_maxsize, "unknown error");
-        return PROVER_ERROR;
+    json jsonPublic;
+    AltBn128::FrElement aux;
+    for (u_int32_t i=1; i<= nPublic; i++) {
+        AltBn128::Fr.toMontgomery(aux, wtnsData[i]);
+        jsonPublic.push_back(AltBn128::Fr.toString(aux));
     }
 
-    return PROVER_OK;
+    return jsonPublic.dump();
 }
 
+static void
+CheckAndUpdateBufferSizes(
+    unsigned long long   proofCalcSize,
+    unsigned long long  *proofSize,
+    unsigned long long   publicCalcSize,
+    unsigned long long  *publicSize,
+    const std::string   &type)
+{
+    if (*proofSize < proofCalcSize || *publicSize < publicCalcSize) {
 
-/*
-    HeaderGroth(2)
-    n8q
-    q
-    n8r
-    r
-    NVars
-    NPub
-    DomainSize  (multiple of 2)
-    [alpha]1
-    [beta]1
-    [beta]2
-    [gamma]2
-    [delta1]1
-    [delta1]2
-    [delta2]1
-    [delta2]2
+        *proofSize  = proofCalcSize;
+        *publicSize = publicCalcSize;
 
-    IC(3)
-    Coeffs(4)
-    PointsA(5)
-    PointsB1(6)
-    PointsB2(7)
-    PointsC1(8)
-    PointsC2(9)
-    IndexesC1(10)
-    IndexesC2(11)
-    PointsH(12)
-    Contributions(13)
-*/
+        if (*proofSize < proofCalcSize) {
+            throw ShortBufferException("Proof buffer is too short. " + type + " size: "
+                                       + std::to_string(proofCalcSize) +
+                                       ", actual size: "
+                                       + std::to_string(*proofSize));
+        } else {
+            throw ShortBufferException("Public buffer is too short. " + type + " size: "
+                                       + std::to_string(proofCalcSize) +
+                                       ", actual size: "
+                                       + std::to_string(*proofSize));
+       }
+    }
+}
 
-struct UltraGrothProver {
+class UltraGrothProver
+{
     BinFileUtils::BinFile zkey;
     std::unique_ptr<ZKeyUtils::Header> zkeyHeader;
     std::unique_ptr<UltraGroth::Prover<AltBn128::Engine>> prover;
 
-    UltraGrothProver(
-        const void         *zkey_buffer,
-        unsigned long long  zkey_size
-    ):    
-        zkey(zkey_buffer, zkey_size, "zkey", 1),
-        zkeyHeader(ZKeyUtils::loadHeader(&zkey))
+public:
+    UltraGrothProver(const void         *zkey_buffer,
+                  unsigned long long  zkey_size)
+
+        : zkey(zkey_buffer, zkey_size, "zkey", 1),
+          zkeyHeader(ZKeyUtils::loadHeader(&zkey))
     {
         if (!PrimeIsValid(zkeyHeader->rPrime)) {
             throw std::invalid_argument("zkey curve not supported");
         }
 
-        prover = UltraGroth::makeProver<AltBn128::Engine>(
+         prover = UltraGroth::makeProver<AltBn128::Engine>(
             zkeyHeader->nVars,
             zkeyHeader->nPublic,
             zkeyHeader->domainSize,
@@ -164,7 +159,122 @@ struct UltraGrothProver {
             zkey.getSectionData(12)    // pointsH1
         );
     }
+
+    void prove(const void         *wtns_buffer,
+               unsigned long long  wtns_size,
+               std::string        &stringProof,
+               std::string        &stringPublic)
+    {
+        BinFileUtils::BinFile wtns(wtns_buffer, wtns_size, "wtns", 2);
+        auto wtnsHeader = WtnsUtils::loadHeader(&wtns);
+
+        if (zkeyHeader->nVars != wtnsHeader->nVars) {
+            throw InvalidWitnessLengthException("Invalid witness length. Circuit: "
+                                        + std::to_string(zkeyHeader->nVars)
+                                        + ", witness: "
+                                        + std::to_string(wtnsHeader->nVars));
+        }
+
+        if (!PrimeIsValid(wtnsHeader->prime)) {
+            throw std::invalid_argument("different wtns curve");
+        }
+
+        UltraGroth::LookupWtns<AltBn128::Engine> wtnsData;
+
+        wtnsData.signals_len = wtns.getSectionSize(2);
+
+        AltBn128::FrElement* signals = new AltBn128::FrElement[wtnsData.signals_len >> 5];
+        memcpy(signals, wtns.getSectionData(2), wtnsData.signals_len);
+
+        wtnsData.signals = signals;
+
+        wtnsData.chunks = (uint32_t *)wtns.getSectionData(3);
+        wtnsData.chunks_len = wtns.getSectionSize(3);
+
+        wtnsData.frequencies = (uint32_t *)wtns.getSectionData(4);
+        wtnsData.frequencies_len = wtns.getSectionSize(4);
+
+        wtnsData.wtns_indxs = (uint32_t *)wtns.getSectionData(5);
+        wtnsData.wtns_indxs_len = wtns.getSectionSize(5);
+
+        wtnsData.push_indxs = (uint32_t *)wtns.getSectionData(6);
+        wtnsData.push_indxs_len = wtns.getSectionSize(6);
+
+        auto proof = prover->prove(&wtnsData);
+
+        stringProof = proof->toJson().dump();
+        stringPublic = BuildPublicString(wtnsData.signals, zkeyHeader->nPublic);
+        
+    }
+
+    unsigned long long proofBufferMinSize() const
+    {
+        return ProofBufferMinSize();
+    }
+
+    unsigned long long publicBufferMinSize() const
+    {
+        return PublicBufferMinSize(zkeyHeader->nPublic);
+    }
 };
+
+int
+ultra_groth_public_size_for_zkey_buf(
+    const void          *zkey_buffer,
+    unsigned long long   zkey_size,
+    unsigned long long  *public_size,
+    char                *error_msg,
+    unsigned long long   error_msg_maxsize)
+{
+    try {
+        BinFileUtils::BinFile zkey(zkey_buffer, zkey_size, "zkey", 1);
+        auto zkeyHeader = ZKeyUtils::loadHeader(&zkey);
+
+        *public_size = PublicBufferMinSize(zkeyHeader->nPublic);
+
+    } catch (std::exception& e) {
+        CopyError(error_msg, error_msg_maxsize, e);
+        return PROVER_ERROR;
+
+    } catch (...) {
+        CopyError(error_msg, error_msg_maxsize, "unknown error");
+        return PROVER_ERROR;
+    }
+
+    return PROVER_OK;
+}
+
+int
+ultra_groth_public_size_for_zkey_file(
+    const char          *zkey_fname,
+    unsigned long long  *public_size,
+    char                *error_msg,
+    unsigned long long   error_msg_maxsize)
+{
+    try {
+        auto zkey = BinFileUtils::openExisting(zkey_fname, "zkey", 1);
+        auto zkeyHeader = ZKeyUtils::loadHeader(zkey.get());
+
+        *public_size = PublicBufferMinSize(zkeyHeader->nPublic);
+
+    } catch (std::exception& e) {
+        CopyError(error_msg, error_msg_maxsize, e);
+        return PROVER_ERROR;
+
+    } catch (...) {
+        CopyError(error_msg, error_msg_maxsize, "unknown error");
+        return PROVER_ERROR;
+    }
+
+    return PROVER_OK;
+}
+
+void
+ultra_groth_proof_size(
+    unsigned long long *proof_size)
+{
+    *proof_size = ProofBufferMinSize();
+}
 
 int
 ultra_groth_prover_create(
@@ -186,12 +296,13 @@ ultra_groth_prover_create(
         UltraGrothProver *prover = new UltraGrothProver(zkey_buffer, zkey_size);
 
         *prover_object = prover;
+
     } catch (std::exception& e) {
-        CopyError(error_msg, error_msg_maxsize, e.what());
+        CopyError(error_msg, error_msg_maxsize, e);
         return PROVER_ERROR;
 
     } catch (std::exception *e) {
-        CopyError(error_msg, error_msg_maxsize, e->what());
+        CopyError(error_msg, error_msg_maxsize, *e);
         delete e;
         return PROVER_ERROR;
 
@@ -204,94 +315,69 @@ ultra_groth_prover_create(
 }
 
 int
-ultra_groth_prover(
-    const void          *zkey_buffer,
-    unsigned long long   zkey_size,
-    char                *public_buffer,
-    unsigned long long  *public_size,
+ultra_groth_prover_create_zkey_file(
+    void                **prover_object,
+    const char          *zkey_file_path,
     char                *error_msg,
-    unsigned long long   error_msg_maxsize,
-    const uint8_t* bytes,
-    size_t json_size
-) {
-    void *prover = NULL;
+    unsigned long long   error_msg_maxsize)
+{
+    BinFileUtils::FileLoader fileLoader;
 
-    int error = ultra_groth_prover_create(
-        &prover,
-        zkey_buffer,
-        zkey_size,
-        error_msg,
-        error_msg_maxsize
-    );
+    try {
+        fileLoader.load(zkey_file_path);
 
-    if (error != PROVER_OK) {
-        return error;
+    } catch (std::exception& e) {
+        CopyError(error_msg, error_msg_maxsize, e);
+        return PROVER_ERROR;
     }
 
-    error = ultra_groth_prover_prove(
-        prover,
-        public_buffer,
-        public_size,
-        error_msg,
-        error_msg_maxsize,
-        bytes,
-        json_size
-    );
-
-    ultra_groth_prover_destroy(prover);
-    return error;
+    return ultra_groth_prover_create(
+                prover_object,
+                fileLoader.dataBuffer(),
+                fileLoader.dataSize(),
+                error_msg,
+                error_msg_maxsize);
 }
 
 int
 ultra_groth_prover_prove(
     void                *prover_object,
-    char                *public_buffer,
+    const void          *wtns_buffer,
+    unsigned long long   wtns_size,
+    std::string         &proof_buffer,
+    unsigned long long  *proof_size,
+    std::string         &public_buffer,
     unsigned long long  *public_size,
     char                *error_msg,
-    unsigned long long   error_msg_maxsize,
-    const uint8_t* bytes,
-    size_t json_size
-) {
+    unsigned long long   error_msg_maxsize)
+{
     try {
         if (prover_object == NULL) {
             throw std::invalid_argument("Null prover object");
         }
 
-        if (public_buffer == NULL) {
-            throw std::invalid_argument("Null public buffer");
-        }
-
-        if (public_size == NULL) {
-            throw std::invalid_argument("Null public size");
+        if (wtns_buffer == NULL) {
+            throw std::invalid_argument("Null witness buffer");
         }
 
         UltraGrothProver *prover = static_cast<UltraGrothProver*>(prover_object);
-        std::string stringProof, stringPublic;
 
-        //prover->prover->debug_prover_inputs();
+        prover->prove(wtns_buffer, wtns_size, proof_buffer, public_buffer);
 
-        auto proof = prover->prover->prove(bytes, json_size);
-        
-        if (proof->error_size > 0) {
-            throw std::invalid_argument(std::string(reinterpret_cast<const char*>(proof->error), proof->error_size));
-        }
-        
-        auto jsonProof = proof->toJson();
-        std::ofstream file("proof.json");
+    } catch(InvalidWitnessLengthException& e) {
+        CopyError(error_msg, error_msg_maxsize, e);
+        return PROVER_INVALID_WITNESS_LENGTH;
 
-        if (file.is_open()) {
-            file << jsonProof.dump(4);
-            file.close();
-        } else {
-            std::cerr << "Failed to open file for writing.\n";
-        }
+    } catch(ShortBufferException& e) {
+        CopyError(error_msg, error_msg_maxsize, e);
+        return PROVER_ERROR_SHORT_BUFFER;
 
-    } catch (std::exception &e) {
-        CopyError(error_msg, error_msg_maxsize, e.what());
+    } catch (std::exception& e) {
+        CopyError(error_msg, error_msg_maxsize, e);
         return PROVER_ERROR;
 
     } catch (std::exception *e) {
-        CopyError(error_msg, error_msg_maxsize, e->what());
+        CopyError(error_msg, error_msg_maxsize, *e);
         delete e;
         return PROVER_ERROR;
 
@@ -304,9 +390,88 @@ ultra_groth_prover_prove(
 }
 
 void
-ultra_groth_prover_destroy(void *prover_object) {
-    if (prover_object == NULL) return;
+ultra_groth_prover_destroy(void *prover_object)
+{
+    if (prover_object != NULL) {
+        UltraGrothProver *prover = static_cast<UltraGrothProver*>(prover_object);
 
-    UltraGrothProver *prover = static_cast<UltraGrothProver*>(prover_object);
-    delete prover;
+        delete prover;
+    }
+}
+
+int
+ultra_groth_prover(
+    const void          *zkey_buffer,
+    unsigned long long   zkey_size,
+    const void          *wtns_buffer,
+    unsigned long long   wtns_size,
+    std::string         &proof_buffer,
+    unsigned long long  *proof_size,
+    std::string         &public_buffer,
+    unsigned long long  *public_size,
+    char                *error_msg,
+    unsigned long long   error_msg_maxsize)
+{
+    void *prover = NULL;
+
+    int error = ultra_groth_prover_create(
+                    &prover,
+                    zkey_buffer,
+                    zkey_size,
+                    error_msg,
+                    error_msg_maxsize);
+
+    if (error != PROVER_OK) {
+        return error;
+    }
+
+    error = ultra_groth_prover_prove(
+                    prover,
+                    wtns_buffer,
+                    wtns_size,
+                    proof_buffer,
+                    proof_size,
+                    public_buffer,
+                    public_size,
+                    error_msg,
+                    error_msg_maxsize);
+
+    ultra_groth_prover_destroy(prover);
+
+    return error;
+}
+
+int
+ultra_groth_prover_zkey_file(
+    const char          *zkey_file_path,
+    const void          *wtns_buffer,
+    unsigned long long   wtns_size,
+    std::string         &proof_buffer,
+    unsigned long long  *proof_size,
+    std::string         &public_buffer,
+    unsigned long long  *public_size,
+    char                *error_msg,
+    unsigned long long   error_msg_maxsize)
+{
+    BinFileUtils::FileLoader fileLoader;
+
+    try {
+        fileLoader.load(zkey_file_path);
+
+    } catch (std::exception& e) {
+        CopyError(error_msg, error_msg_maxsize, e);
+        return PROVER_ERROR;
+    }
+
+    return ultra_groth_prover(
+            fileLoader.dataBuffer(),
+            fileLoader.dataSize(),
+            wtns_buffer,
+            wtns_size,
+            proof_buffer,
+            proof_size,
+            public_buffer,
+            public_size,
+            error_msg,
+            error_msg_maxsize);
 }
