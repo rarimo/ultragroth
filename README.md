@@ -1,10 +1,7 @@
-## Important note 
 
-**This is a new implementation of rapidsnark. The original (and now obsoleted) implemenation is available here: [rapidsnark-old](https://github.com/iden3/rapidsnark-old).**
+# Bionetta Ultra-Groth
 
-# rapidsnark
-
-Rapidsnark is a zkSnark proof generation written in C++ and intel/arm assembly. That generates proofs created in [circom](https://github.com/iden3/circom) and [snarkjs](https://github.com/iden3/snarkjs) very fast.
+This is case-specific implementation of Ultra-Groth protocol based on Rapidsnark prover. It's generates proofs for circuits created in [Bionetta SDK](https://github.com/rarimo/bionetta) pretty fast. Check out technical [REAMDE](./src/README.md) if you curios about it.
 
 ## Dependencies
 
@@ -60,63 +57,6 @@ git submodule update
 make arm64
 ```
 
-### Compile prover for Android
-
-Install Android NDK from https://developer.android.com/ndk or with help of "SDK Manager" in Android Studio.
-
-Set the value of ANDROID_NDK environment variable to the absolute path of Android NDK root directory.
-
-Examples:
-
-```sh
-export ANDROID_NDK=/home/test/Android/Sdk/ndk/23.1.7779620  # NDK is installed by "SDK Manager" in Android Studio.
-export ANDROID_NDK=/home/test/android-ndk-r23b              # NDK is installed as a stand-alone package.
-```
-
-Prerequisites if build on Ubuntu:
-
-```sh
-apt-get install curl xz-utils build-essential cmake m4 nasm
-```
-
-Compilation:
-
-```sh
-git submodule init
-git submodule update
-./build_gmp.sh android
-make android
-```
-
-### Compile prover for iOS
-
-Install Xcode
-
-```sh
-git submodule init
-git submodule update
-./build_gmp.sh ios
-make ios
-```
-Open generated Xcode project and compile prover.
-
-## Build for iOS emulator
-
-Install Xcode
-
-```sh
-git submodule init
-git submodule update
-./build_gmp.sh ios_simulator
-make ios_simulator
-```
-
-Files that you need to copy to your XCode project to link against Rapidsnark:
-* build_prover_ios_simulator/src/Debug-iphonesimulator/librapidsnark.a
-* build_prover_ios_simulator/src/Debug-iphonesimulator/libfq.a
-* build_prover_ios_simulator/src/Debug-iphonesimulator/libfr.a
-* depends/gmp/package_iphone_simulator/lib/libgmp.a
-
 ## Building proof
 
 You have a full prover compiled in the build directory.
@@ -129,72 +69,36 @@ snarkjs groth16 prove <circuit.zkey> <witness.wtns> <proof.json> <public.json>
 
 by this one
 ```sh
-./package/bin/prover <circuit.zkey> <witness.wtns> <proof.json> <public.json>
+./build_prover/src/prover_ultra_groth <circuit.zkey> <witness.uwtns> <proof.json> <public.json>
 ```
 
-## Compile prover in server mode
+### IMPORTANT NOTE
+
+This implementation works correctly ONLY with circuits compiled in Bionetta SDK infrastructure - `.zkey` should be generated using our [SnarkJS](https://github.com/rarimo/ultragroth-snarkjs/tree/dev) fork and witness files from our [custon witness gen](https://github.com/rarimo/bionetta-witness-generator);
+
+Use 
 
 ```sh
-npm install
-git submodule init
-git submodule update
-npx task buildPistache
-npx task buildProverServer
+./build_prover/src/verifier_ultra_groth <vkey.json> <public.json> <proof.json>
 ```
 
-## Launch prover in server mode
-```sh
-./build/proverServer  <port> <circuit1_zkey> <circuit2_zkey> ... <circuitN_zkey>
-```
+to verify proof.
 
-For every `circuit.circom` you have to generate with circom with --c option the `circuit_cpp` and after compilation you have to copy the executable into the `build` folder so the server can generate the witness and then the proof based on this witness.
-You have an example of the usage calling the server endpoints to generate the proof with Nodejs in `/tools/request.js`.
+## Benchmarks
 
-To test a request you should pass an `input.json` as a parameter to the request call.
-```sh
-node tools/request.js <input.json> <circuit>
-```
+This prover parallelizes as much as it can the proof generation. Note, that performance difference between our implementation and Rapidsnark comes down to lookup tables, which reduce constraints and witness size of circuit rather than "bare-metal" optimizations.
 
-## Wrappers
+## Proving Time
 
-Rapidsnark can be used with several programming languages and environments through wrappers that provide integration with the original library. Below is a list of available wrappers:
+| Model   | Ultra-Groth (s) | Groth16 (s) | EZKL (s) | ZKML (s) | Deep-prove (s) | Params    |
+|---------|-----------------|-------------|----------|----------|----------------|-----------|
+| Model1  | 0.57            | 0.12        | 21.66    | 25.00    | 0.378          | 79,510    |
+| Model2  | 0.73            | 0.27        | 656.21   | 232.55   | 1.989          | 2,006,020 |
+| Model3  | 0.74            | 2.19        | 44.88    | 209.13   | 0.896          | 49,870    |
+| Model4  | 1.08            | 2.20        | 163.50   | 220.84   | 1.010          | 133,870   |
+| Model5  | 0.89            | 2.22        | 332.20   | 222.81   | 1.557          | 996,110   |
+| Model6  | 1.79            | 4.72        | 663.93   | 230.72   | 2.516          | 1,974,070 |
 
-| Wrapper      | Repository Link                         |
-| ------------ |-----------------------------------------|
-| Go           | https://github.com/iden3/go-rapidsnark  |
-| iOS          | https://github.com/iden3/ios-rapidsnark |
-| Android      | https://github.com/iden3/android-rapidsnark |
-| React Native | https://github.com/iden3/react-native-rapidsnark |
-| Flutter      | https://github.com/iden3/flutter-rapidsnark |
+### Annotation
 
-## Benchmark
-
-This prover parallelizes as much as it can the proof generation.
-
-The prover is much faster that snarkjs and faster than bellman.
-
-[TODO] Some comparative tests should be done.
-
-## Run tests
-
-You need to perform all the steps from the
-[Compile prover in standalone mode](#compile-prover-in-standalone-mode) section.
-After that you can run tests with the following command from the build
-directory:
-
-```sh
-# Make sure you are in the build directory
-# ./build_prover for linux, ./build_prover_macos_arm64 for macOS.
-cmake --build . --parallel && ctest --rerun-failed --output-on-failure
-```
-
-To run just the `test_public_size` test for custom zkey to measure the
-performance, you can run the following command from the build directory:
-
-```sh
-src/test_public_size ../testdata/circuit_final.zkey 86
-```
-
-## License
-
-rapidsnark is part of the iden3 project copyright 2021 0KIMS association and published with LGPL-3 license. Please check the COPYING file for more details.
+Demonstrated models have different number of activations (increasing with model's numeral).
