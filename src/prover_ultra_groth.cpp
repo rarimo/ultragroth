@@ -183,32 +183,23 @@ public:
             throw std::invalid_argument("different wtns curve");
         }
 
-        UltraGroth::LookupWtns<AltBn128::Engine> wtnsData;
+        AltBn128::FrElement* signals = new AltBn128::FrElement[zkeyHeader->nVars];
+        // Can't modify values on pointer from wtns.getSectionData(2) so I copy it to another
+        memcpy(signals, wtns.getSectionData(2), wtns.getSectionSize(2));
 
-        wtnsData.signals_len = wtns.getSectionSize(2);
-
-        AltBn128::FrElement* signals = new AltBn128::FrElement[wtnsData.signals_len >> 5];
-        memcpy(signals, wtns.getSectionData(2), wtnsData.signals_len);
-
-        wtnsData.signals = signals;
-
-        wtnsData.chunks = (uint32_t *)wtns.getSectionData(3);
-        wtnsData.chunks_len = wtns.getSectionSize(3);
-
-        wtnsData.frequencies = (uint32_t *)wtns.getSectionData(4);
-        wtnsData.frequencies_len = wtns.getSectionSize(4);
-
-        wtnsData.wtns_indxs = (uint32_t *)wtns.getSectionData(5);
-        wtnsData.wtns_indxs_len = wtns.getSectionSize(5);
-
-        wtnsData.push_indxs = (uint32_t *)wtns.getSectionData(6);
-        wtnsData.push_indxs_len = wtns.getSectionSize(6);
-
-        auto proof = prover->prove(&wtnsData);
+        UltraGroth::LookupInfo lookupInfo = UltraGroth::LookupInfo(
+            (uint32_t *)wtns.getSectionData(3), wtns.getSectionSize(3) >> 2,
+            (uint32_t *)wtns.getSectionData(4), wtns.getSectionSize(4) >> 2,
+            (uint32_t *)wtns.getSectionData(5), wtns.getSectionSize(5) >> 2,
+            (uint32_t *)wtns.getSectionData(6), wtns.getSectionSize(6) >> 2
+        );
+        
+        auto proof = prover->prove(signals, lookupInfo);
 
         stringProof = proof->toJson().dump();
-        stringPublic = BuildPublicString(wtnsData.signals, zkeyHeader->nPublic, zkeyHeader->rand_indx);
+        stringPublic = BuildPublicString(signals, zkeyHeader->nPublic, zkeyHeader->rand_indx);
         
+        delete[] signals;
     }
 
     unsigned long long proofBufferMinSize() const

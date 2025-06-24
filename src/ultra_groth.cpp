@@ -60,12 +60,11 @@ typename Engine::FrElement derive_challenge(Engine& E, typename Engine::G1PointA
 
 
 /// Computes lookup signals and writes them to witness
-static void compute_lookup(LookupWtns<AltBn128::Engine> *wtns, RawFr::Element rand) {
-    uint32_t *chunks = wtns->chunks;
-    uint32_t *frequencies = wtns->frequencies;
-    // convert from bytes count
-    uint32_t chunks_total = wtns->chunks_len >> 2;
-    uint32_t lookup_size = wtns->frequencies_len >> 2;
+static void compute_lookup(AltBn128::Engine::FrElement* signals, LookupInfo &info, RawFr::Element rand) {
+    uint32_t *chunks = info.chunks;
+    uint32_t *frequencies = info.frequencies;
+    uint32_t chunks_total = info.chunks_len;
+    uint32_t lookup_size = info.frequencies_len;
 
     uint64_t *inv1_digits = new uint64_t[chunks_total << 2];
     uint64_t *inv2_digits = new uint64_t[lookup_size << 2];
@@ -98,12 +97,12 @@ static void compute_lookup(LookupWtns<AltBn128::Engine> *wtns, RawFr::Element ra
     memcpy(&push_vector[offset],prod_digits, lookup_size * 4 * sizeof(uint64_t));
     offset += lookup_size * 4;
 
-    for (uint32_t i = 0; i < (wtns->wtns_indxs_len >> 2) /*converted from size in bytes*/; i++) {
+    for (uint32_t i = 0; i < info.wtns_indxs_len; i++) {
 
-        uint32_t wtns_ind = wtns->wtns_indxs[i];
-        uint32_t push_ind = wtns->push_indxs[i];
+        uint32_t wtns_ind = info.wtns_indxs[i];
+        uint32_t push_ind = info.push_indxs[i];
 
-        memcpy(&wtns->signals[wtns_ind], &push_vector[push_ind << 2], 4 * sizeof(uint64_t));
+        memcpy(&signals[wtns_ind], &push_vector[push_ind << 2], 4 * sizeof(uint64_t));
     }
 }
 
@@ -402,7 +401,7 @@ Prover<Engine>::execute_final_round(
 
 template <typename Engine>
 std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
-    LookupWtns<Engine> *wtnsData
+    typename Engine::FrElement* wtns, LookupInfo &lookupInfo
 ) {
 
     Proof<Engine> *p = new Proof<Engine>(Engine::engine);
@@ -417,7 +416,7 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     typename Engine::FrElement *round_wtns = new typename Engine::FrElement[round_indexes_count];
 
     for (uint32_t i = 0; i < round_indexes_count; i++) {
-        round_wtns[i] = wtnsData->signals[round_indexes[i]];
+        round_wtns[i] = wtns[round_indexes[i]];
     }
 
     std::tuple<typename Engine::G1PointAffine, typename Engine::FrElement> round_result = execute_round(round_wtns, round_indexes_count);
@@ -436,18 +435,18 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(
     E.fr.toMpz(x, rand);
     mpz_export(challenge, 0, -1, 8, -1, 0, x);
 
-    compute_lookup(wtnsData, rand);
+    compute_lookup(wtns, lookupInfo, rand);
 
     typename Engine::FrElement *final_round_wtns = new typename Engine::FrElement[final_round_indexes_count];
 
     // Convert witness from uint64 to FrElement
     for (uint32_t i = 0; i < final_round_indexes_count; i++) {
         uint32_t index = final_round_indexes[i];
-        final_round_wtns[i] = wtnsData->signals[index]; 
+        final_round_wtns[i] = wtns[index]; 
     }
 
     auto final_round_result = execute_final_round(
-        wtnsData->signals,
+        wtns,
         final_round_wtns,
         round_random_factor
     );
