@@ -134,7 +134,7 @@ set_target_properties(rapidsnarkStaticFrFq PROPERTIES OUTPUT_NAME rapidsnark-fr-
 
 find_package(OpenSSL REQUIRED)
 add_executable(prover_ultra_groth main_prover_ultra_groth.cpp)
-target_link_libraries(prover_ultra_groth rapidsnarkStatic ${BIONETTA_PROVER_LIB} )
+target_link_libraries(prover_ultra_groth rapidsnarkStatic)
 
 
 find_package(OpenSSL REQUIRED)

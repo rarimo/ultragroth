@@ -10,26 +10,6 @@ project(rapidsnark LANGUAGES CXX C ASM)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-
-# TODO Maybe pass path as argument to cmake configuration
-# Linux
-if (DEFINED CMAKE_LIB_PATH)
-    message("Found path to lib: ${CMAKE_LIB_PATH}.")
-    set(BIONETTA_PROVER_LIB ${CMAKE_LIB_PATH})
-
-elseif(UNIX AND NOT APPLE)
-    set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/libtest_mnist.a)
-
-# Mac OS
-elseif(APPLE)
-    set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/libtest_mnist.a)
-
-# Windows
-else()
-    set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/libtest_mnist.a)
-endif()
-
-
 message("BITS_PER_CHUNK=" ${BITS_PER_CHUNK})
 message("USE_ASM=" ${USE_ASM})
 message("USE_OPENMP=" ${USE_OPENMP})
