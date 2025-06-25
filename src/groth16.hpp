@@ -41,9 +41,9 @@ namespace Groth16 {
  #pragma pack(push, 1)
     template <typename Engine>
     struct Coef {
-        u_int32_t m;
-        u_int32_t c;
-        u_int32_t s;
+        uint32_t m;
+        uint32_t c;
+        uint32_t s;
         typename Engine::FrElement coef;
     };
 #pragma pack(pop)
@@ -52,10 +52,10 @@ namespace Groth16 {
     class Prover {
 
         Engine &E;
-        u_int32_t nVars;
-        u_int32_t nPublic;
-        u_int32_t domainSize;
-        u_int64_t nCoefs;
+        uint32_t nVars;
+        uint32_t nPublic;
+        uint32_t domainSize;
+        uint64_t nCoefs;
         typename Engine::G1PointAffine &vk_alpha1;
         typename Engine::G1PointAffine &vk_beta1;
         typename Engine::G2PointAffine &vk_beta2;
@@ -72,10 +72,10 @@ namespace Groth16 {
     public:
         Prover(
             Engine &_E, 
-            u_int32_t _nVars, 
-            u_int32_t _nPublic, 
-            u_int32_t _domainSize, 
-            u_int64_t _nCoefs, 
+            uint32_t _nVars, 
+            uint32_t _nPublic, 
+            uint32_t _domainSize, 
+            uint64_t _nCoefs, 
             typename Engine::G1PointAffine &_vk_alpha1,
             typename Engine::G1PointAffine &_vk_beta1,
             typename Engine::G2PointAffine &_vk_beta2,
@@ -117,10 +117,10 @@ namespace Groth16 {
 
     template <typename Engine>
     std::unique_ptr<Prover<Engine>> makeProver(
-        u_int32_t nVars, 
-        u_int32_t nPublic, 
-        u_int32_t domainSize, 
-        u_int64_t nCoefs, 
+        uint32_t nVars, 
+        uint32_t nPublic, 
+        uint32_t domainSize, 
+        uint64_t nCoefs, 
         void *vk_alpha1,
         void *vk_beta1,
         void *vk_beta2,

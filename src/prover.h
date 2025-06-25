@@ -16,12 +16,13 @@ extern "C" {
  * @returns PROVER_OK in case of success, and the size of public buffer is written to public_size
  */
 int
-groth16_public_size_for_zkey_buf(
+public_size_for_zkey_buf(
     const void          *zkey_buffer,
     unsigned long long   zkey_size,
     unsigned long long  *public_size,
     char                *error_msg,
-    unsigned long long   error_msg_maxsize);
+    unsigned long long   error_msg_maxsize
+);
 
 /**
  * groth16_public_size_for_zkey_file calculates minimum buffer size for
@@ -33,18 +34,20 @@ groth16_public_size_for_zkey_buf(
  *        PROVER_ERROR - in case of an error, error_msg contains the error message
  */
 int
-groth16_public_size_for_zkey_file(
+public_size_for_zkey_file(
     const char          *zkey_fname,
     unsigned long long  *public_size,
     char                *error_msg,
-    unsigned long long   error_msg_maxsize);
+    unsigned long long   error_msg_maxsize
+);
 
 /**
  * Returns buffer size to output proof as json string
  */
 void
-groth16_proof_size(
-    unsigned long long *proof_size);
+proof_size(
+    unsigned long long *proof_size
+);
 
 /**
  * Initializes 'prover_object' with a pointer to a new prover object.
@@ -58,7 +61,17 @@ groth16_prover_create(
     const void          *zkey_buffer,
     unsigned long long   zkey_size,
     char                *error_msg,
-    unsigned long long   error_msg_maxsize);
+    unsigned long long   error_msg_maxsize
+);
+
+int
+ultra_groth_prover_create(
+    void                **prover_object,
+    const void          *zkey_buffer,
+    unsigned long long   zkey_size,
+    char                *error_msg,
+    unsigned long long   error_msg_maxsize
+);
 
 /**
  * Initializes 'prover_object' with a pointer to a new prover object.
@@ -71,7 +84,16 @@ groth16_prover_create_zkey_file(
     void                **prover_object,
     const char          *zkey_file_path,
     char                *error_msg,
-    unsigned long long   error_msg_maxsize);
+    unsigned long long   error_msg_maxsize
+);
+
+int
+ultra_groth_prover_create_zkey_file(
+    void                **prover_object,
+    const char          *zkey_file_path,
+    char                *error_msg,
+    unsigned long long   error_msg_maxsize
+);
 
 /**
  * Proves 'wtns_buffer' and saves results to 'proof_buffer' and 'public_buffer'.
@@ -90,13 +112,34 @@ groth16_prover_prove(
     char                *public_buffer,
     unsigned long long  *public_size,
     char                *error_msg,
-    unsigned long long   error_msg_maxsize);
+    unsigned long long   error_msg_maxsize
+);
+
+int
+ultra_groth_prover_prove(
+    void                *prover_object,
+    const void          *wtns_buffer,
+    unsigned long long   wtns_size,
+    char                *proof_buffer,
+    unsigned long long  *proof_size,
+    char                *public_buffer,
+    unsigned long long  *public_size,
+    char                *error_msg,
+    unsigned long long   error_msg_maxsize
+);
 
 /**
  * Destroys 'prover_object'.
  */
 void
-groth16_prover_destroy(void *prover_object);
+groth16_prover_destroy(
+    void *prover_object
+);
+
+void
+ultra_groth_prover_destroy(
+    void *prover_object
+);
 
 /**
  * groth16_prover
@@ -116,7 +159,22 @@ groth16_prover(
     char                *public_buffer,
     unsigned long long  *public_size,
     char                *error_msg,
-    unsigned long long   error_msg_maxsize);
+    unsigned long long   error_msg_maxsize
+);
+
+int
+ultra_groth_prover(
+    const void          *zkey_buffer,
+    unsigned long long   zkey_size,
+    const void          *wtns_buffer,
+    unsigned long long   wtns_size,
+    char                *proof_buffer,
+    unsigned long long  *proof_size,
+    char                *public_buffer,
+    unsigned long long  *public_size,
+    char                *error_msg,
+    unsigned long long   error_msg_maxsize
+);
 
 /**
  * groth16_prover_zkey_file
@@ -135,7 +193,21 @@ groth16_prover_zkey_file(
     char                *public_buffer,
     unsigned long long  *public_size,
     char                *error_msg,
-    unsigned long long   error_msg_maxsize);
+    unsigned long long   error_msg_maxsize
+);
+
+int
+ultra_groth_prover_zkey_file(
+    const char          *zkey_file_path,
+    const void          *wtns_buffer,
+    unsigned long long   wtns_size,
+    char                *proof_buffer,
+    unsigned long long  *proof_size,
+    char                *public_buffer,
+    unsigned long long  *public_size,
+    char                *error_msg,
+    unsigned long long   error_msg_maxsize
+);
 
 #ifdef __cplusplus
 }
