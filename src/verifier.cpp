@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <alt_bn128.hpp>
 #include <nlohmann/json.hpp>
+#include <cstdint>
 
 #include "verifier.h"
 #include "groth16.hpp"
@@ -200,9 +201,9 @@ ultra_groth_verify(
 ) {
     try {
 
-        auto proof_value = parse_proof(proof);
+        auto proof_value = ultra_groth_parse_proof(proof);
         auto inputs_value = parse_inputs(inputs);
-        auto key_value = parse_key(verification_key);
+        auto key_value = ultra_groth_parse_key(verification_key);
 
         UltraGroth::Verifier<AltBn128::Engine> verifier;
 

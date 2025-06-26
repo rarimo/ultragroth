@@ -5,6 +5,7 @@
 #include <array>
 #include <vector>
 #include <tuple>
+#include <cstdint>
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 

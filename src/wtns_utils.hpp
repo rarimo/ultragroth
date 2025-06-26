@@ -2,6 +2,7 @@
 #define WTNS_UTILS
 
 #include <gmp.h>
+#include <cstdint>
 
 #include "binfile_utils.hpp"
 

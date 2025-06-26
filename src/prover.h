@@ -16,7 +16,15 @@ extern "C" {
  * @returns PROVER_OK in case of success, and the size of public buffer is written to public_size
  */
 int
-public_size_for_zkey_buf(
+groth16_public_size_for_zkey_buf(
+    const void          *zkey_buffer,
+    unsigned long long   zkey_size,
+    unsigned long long  *public_size,
+    char                *error_msg,
+    unsigned long long   error_msg_maxsize
+);
+int
+ultra_groth_public_size_for_zkey_buf(
     const void          *zkey_buffer,
     unsigned long long   zkey_size,
     unsigned long long  *public_size,
@@ -34,7 +42,14 @@ public_size_for_zkey_buf(
  *        PROVER_ERROR - in case of an error, error_msg contains the error message
  */
 int
-public_size_for_zkey_file(
+groth16_public_size_for_zkey_file(
+    const char          *zkey_fname,
+    unsigned long long  *public_size,
+    char                *error_msg,
+    unsigned long long   error_msg_maxsize
+);
+int
+ultra_groth_public_size_for_zkey_file(
     const char          *zkey_fname,
     unsigned long long  *public_size,
     char                *error_msg,
@@ -45,7 +60,14 @@ public_size_for_zkey_file(
  * Returns buffer size to output proof as json string
  */
 void
-proof_size(
+groth16_proof_size(
+    unsigned long long *proof_size
+);
+/**
+ * Returns buffer size to output proof as json string
+ */
+void
+ultra_groth_proof_size(
     unsigned long long *proof_size
 );
 

@@ -3,6 +3,7 @@
 
 #include <gmp.h>
 #include <memory>
+#include <cstdint>
 
 #include "binfile_utils.hpp"
 

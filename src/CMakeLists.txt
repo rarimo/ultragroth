@@ -97,18 +97,16 @@ set(
     zkey_utils.cpp
     wtns_utils.hpp
     wtns_utils.cpp
-    logger.hpp
-    logger.cpp
     fileloader.cpp
     fileloader.hpp
     prover.cpp
     prover.h
     verifier.cpp
     verifier.h
-    prover_ultra_groth.cpp
-    prover_ultragroth.hpp
-    verifier_ultra_groth.cpp
-    verifier_ultra_groth.hpp 
+    prover.cpp
+    prover.h
+    verifier.cpp
+    verifier.h 
     ../depends/ffiasm/c/misc.cpp
     ../depends/ffiasm/c/naf.cpp
     ../depends/ffiasm/c/splitparstr.cpp
@@ -127,20 +125,20 @@ include_directories(
     ../depends/json/single_include
 )
 
-add_library(rapidsnarkStatic STATIC ${LIB_SOURCES})
-set_target_properties(rapidsnarkStatic PROPERTIES OUTPUT_NAME rapidsnark)
+add_library(ultragrothStatic STATIC ${LIB_SOURCES})
+set_target_properties(ultragrothStatic PROPERTIES OUTPUT_NAME ultragroth)
 
-add_library(rapidsnarkStaticFrFq STATIC ${LIB_SOURCES} ${FQ_SOURCES} ${FR_SOURCES})
-set_target_properties(rapidsnarkStaticFrFq PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(rapidsnarkStaticFrFq PROPERTIES OUTPUT_NAME rapidsnark-fr-fq)
+add_library(ultragrothStaticFrFq STATIC ${LIB_SOURCES} ${FQ_SOURCES} ${FR_SOURCES})
+set_target_properties(ultragrothStaticFrFq PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(ultragrothStaticFrFq PROPERTIES OUTPUT_NAME ultragroth-fr-fq)
 
 add_executable(prover main_prover.cpp)
-target_link_libraries(prover rapidsnarkStatic)
+target_link_libraries(prover ultragrothStatic)
 
 add_executable(verifier main_verifier.cpp)
-target_link_libraries(verifier rapidsnarkStatic)
+target_link_libraries(verifier ultragrothStatic)
 
-add_library(rapidsnark SHARED ${LIB_SOURCES})
+add_library(ultragroth SHARED ${LIB_SOURCES})
 
 if((USE_LOGGER OR NOT USE_OPENMP) AND NOT TARGET_PLATFORM MATCHES "android")
     target_link_libraries(prover pthread)
@@ -152,39 +150,23 @@ if(USE_SODIUM)
 endif()
 
 add_executable(prover_ultra_groth main_prover_ultra_groth.cpp)
-target_link_libraries(prover_ultra_groth rapidsnarkStatic)
+target_link_libraries(prover_ultra_groth ultragrothStatic)
 
-add_executable(verifier_ultar_groth main_verifier_ultra_groth.cpp)
-target_link_libraries(verifier_ultra_groth rapidsnarkStatic)
-
-add_library(rapidsnark SHARED ${LIB_SOURCES})
-
-
-# TODO: Maybe delete tests for rapidsnark
-option(BUILD_TESTS "Build the tests" ON)
-
-if(BUILD_TESTS)
-    enable_testing()
-    add_executable(test_public_size test_public_size.c)
-    target_link_libraries(test_public_size rapidsnarkStaticFrFq pthread)
-    add_test(NAME test_public_size COMMAND test_public_size circuit_final.zkey 86
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/testdata)
-endif()
+add_executable(verifier_ultra_groth main_verifier_ultra_groth.cpp)
+target_link_libraries(verifier_ultra_groth ultragrothStatic)
 
 if(OpenMP_CXX_FOUND)
 
     if(TARGET_PLATFORM MATCHES "android")
         target_link_libraries(prover -static-openmp -fopenmp)
         target_link_libraries(verifier -static-openmp -fopenmp)
-        target_link_libraries(rapidsnark -static-openmp -fopenmp)
+        target_link_libraries(ultragroth -static-openmp -fopenmp)
 
     elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
         target_link_libraries(prover OpenMP::OpenMP_CXX)
         target_link_libraries(verifier OpenMP::OpenMP_CXX)
-        target_link_libraries(test_public_size OpenMP::OpenMP_CXX)
     endif()
 
 endif()
 
 
-add_executable(test_prover test_prover.cpp)

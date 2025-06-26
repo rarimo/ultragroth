@@ -4,6 +4,7 @@
 #include <string>
 #include <array>
 #include <nlohmann/json.hpp>
+#include <cstdint>
 using json = nlohmann::json;
 
 #include "fft.hpp"

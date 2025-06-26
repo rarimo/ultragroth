@@ -3,14 +3,15 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
-#include "prover_ultra_groth.hpp"
+#include <cstdint>
+#include "prover.h"
 #include "fileloader.hpp"
 
 int main(int argc, char **argv)
 {
     if (argc != 5) {
         std::cerr << "Invalid number of parameters" << std::endl;
-        std::cerr << "Usage: prover <circuit.zkey> <witness.wtns> <proof.json> <public.json>" << std::endl;
+        std::cerr << "Usage: prover <circuit.zkey> <witness.uwtns> <proof.json> <public.json>" << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -22,8 +23,8 @@ int main(int argc, char **argv)
 
         BinFileUtils::FileLoader zkeyFile(zkeyFilename);
         BinFileUtils::FileLoader wtnsFile(wtnsFilename);
-        std::string        publicBuffer;
-        std::string        proofBuffer;
+        std::vector<char>        publicBuffer;
+        std::vector<char>        proofBuffer;
         unsigned long long       publicSize = 0;
         unsigned long long       proofSize = 0;
         char                     errorMsg[1024];
@@ -41,14 +42,17 @@ int main(int argc, char **argv)
 
         ultra_groth_proof_size(&proofSize);
 
+        publicBuffer.resize(publicSize);
+        proofBuffer.resize(proofSize);
+
         error = ultra_groth_prover(
                    zkeyFile.dataBuffer(),
                    zkeyFile.dataSize(),
                    wtnsFile.dataBuffer(),
                    wtnsFile.dataSize(),
-                   proofBuffer,
+                   proofBuffer.data(),
                    &proofSize,
-                   publicBuffer,
+                   publicBuffer.data(),
                    &publicSize,
                    errorMsg,
                    sizeof(errorMsg));
@@ -58,12 +62,10 @@ int main(int argc, char **argv)
         }
 
         std::ofstream proofFile(proofFilename);
-        proofFile << proofBuffer;
-        proofFile.close();
+        proofFile.write(proofBuffer.data(), proofSize);
 
         std::ofstream publicFile(publicFilename);
-        publicFile << publicBuffer;
-        publicFile.close();
+        publicFile.write(publicBuffer.data(), publicSize);
 
     } catch (std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;

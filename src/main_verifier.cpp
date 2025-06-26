@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stdexcept>
+#include <cstdint>
 
 #include "fileloader.hpp"
 #include "verifier.h"

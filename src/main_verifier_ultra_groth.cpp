@@ -1,8 +1,9 @@
 #include <iostream>
 #include <stdexcept>
+#include <cstdint>
 
 #include "fileloader.hpp"
-#include "verifier_ultra_groth.hpp"
+#include "verifier.h"
 
 
 int main(int argc, char **argv)

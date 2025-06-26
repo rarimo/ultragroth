@@ -5,6 +5,7 @@
 using json = nlohmann::json;
 
 #include <mutex>
+#include <cstdint>
 #include "alt_bn128.hpp"
 #include "groth16.hpp"
 #include "binfile_utils.hpp"

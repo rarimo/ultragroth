@@ -6,6 +6,7 @@ bionetta-prover/
 *.json
 *.sym
 *.wtns
+*.uwtns
 *.Identifier
 *.r1cs
 wtns.txt

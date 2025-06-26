@@ -1,5 +1,4 @@
 #include "random_generator.hpp"
-#include "logging.hpp"
 #include "misc.hpp"
 #include <sstream>
 #include <vector>
@@ -51,36 +50,19 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
 
     ThreadPool &threadPool = ThreadPool::defaultPool();
 
-    LOG_TRACE("Start Multiexp A");
     uint32_t sW = sizeof(wtns[0]);
     typename Engine::G1Point pi_a;
     E.g1.multiMulByScalarMSM(pi_a, pointsA, (uint8_t *)wtns, sW, nVars);
-    std::ostringstream ss2;
-    ss2 << "pi_a: " << E.g1.toString(pi_a);
-    LOG_DEBUG(ss2);
 
-    LOG_TRACE("Start Multiexp B1");
     typename Engine::G1Point pib1;
     E.g1.multiMulByScalarMSM(pib1, pointsB1, (uint8_t *)wtns, sW, nVars);
-    std::ostringstream ss3;
-    ss3 << "pib1: " << E.g1.toString(pib1);
-    LOG_DEBUG(ss3);
 
-    LOG_TRACE("Start Multiexp B2");
     typename Engine::G2Point pi_b;
     E.g2.multiMulByScalarMSM(pi_b, pointsB2, (uint8_t *)wtns, sW, nVars);
-    std::ostringstream ss4;
-    ss4 << "pi_b: " << E.g2.toString(pi_b);
-    LOG_DEBUG(ss4);
 
-    LOG_TRACE("Start Multiexp C");
     typename Engine::G1Point pi_c;
     E.g1.multiMulByScalarMSM(pi_c, pointsC, (uint8_t *)((uint64_t)wtns + (nPublic +1)*sW), sW, nVars-nPublic-1);
-    std::ostringstream ss5;
-    ss5 << "pi_c: " << E.g1.toString(pi_c);
-    LOG_DEBUG(ss5);
 
-    LOG_TRACE("Start Initializing a b c A");
     auto a = new typename Engine::FrElement[domainSize];
     auto b = new typename Engine::FrElement[domainSize];
     auto c = new typename Engine::FrElement[domainSize];
@@ -91,8 +73,6 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
             E.fr.copy(b[i], E.fr.zero());
         }
     });
-
-    LOG_TRACE("Processing coefs");
 
     #define NLOCKS 1024
     std::vector<std::mutex> locks(NLOCKS);
@@ -117,7 +97,6 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
             );
         }
     });
-    LOG_TRACE("Calculating c");
     threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
         for (uint64_t i=begin; i<end; i++) {
             E.fr.mul(
@@ -128,15 +107,9 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
         }
     });
 
-    LOG_TRACE("Initializing fft");
     uint32_t domainPower = fft->log2(domainSize);
 
-    LOG_TRACE("Start iFFT A");
     fft->ifft(a, domainSize);
-    LOG_TRACE("a After ifft:");
-    LOG_DEBUG(E.fr.toString(a[0]).c_str());
-    LOG_DEBUG(E.fr.toString(a[1]).c_str());
-    LOG_TRACE("Start Shift A");
 
     threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
         for (uint64_t i=begin; i<end; i++) {
@@ -144,55 +117,28 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
         }
     });
 
-    LOG_TRACE("a After shift:");
-    LOG_DEBUG(E.fr.toString(a[0]).c_str());
-    LOG_DEBUG(E.fr.toString(a[1]).c_str());
-    LOG_TRACE("Start FFT A");
     fft->fft(a, domainSize);
-    LOG_TRACE("a After fft:");
-    LOG_DEBUG(E.fr.toString(a[0]).c_str());
-    LOG_DEBUG(E.fr.toString(a[1]).c_str());
-    LOG_TRACE("Start iFFT B");
+
     fft->ifft(b, domainSize);
-    LOG_TRACE("b After ifft:");
-    LOG_DEBUG(E.fr.toString(b[0]).c_str());
-    LOG_DEBUG(E.fr.toString(b[1]).c_str());
-    LOG_TRACE("Start Shift B");
+
     threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
         for (uint64_t i=begin; i<end; i++) {
             E.fr.mul(b[i], b[i], fft->root(domainPower+1, i));
         }
     });
-    LOG_TRACE("b After shift:");
-    LOG_DEBUG(E.fr.toString(b[0]).c_str());
-    LOG_DEBUG(E.fr.toString(b[1]).c_str());
-    LOG_TRACE("Start FFT B");
-    fft->fft(b, domainSize);
-    LOG_TRACE("b After fft:");
-    LOG_DEBUG(E.fr.toString(b[0]).c_str());
-    LOG_DEBUG(E.fr.toString(b[1]).c_str());
 
-    LOG_TRACE("Start iFFT C");
+    fft->fft(b, domainSize);
+
     fft->ifft(c, domainSize);
-    LOG_TRACE("c After ifft:");
-    LOG_DEBUG(E.fr.toString(c[0]).c_str());
-    LOG_DEBUG(E.fr.toString(c[1]).c_str());
-    LOG_TRACE("Start Shift C");
+
     threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
         for (uint64_t i=begin; i<end; i++) {
             E.fr.mul(c[i], c[i], fft->root(domainPower+1, i));
         }
     });
-    LOG_TRACE("c After shift:");
-    LOG_DEBUG(E.fr.toString(c[0]).c_str());
-    LOG_DEBUG(E.fr.toString(c[1]).c_str());
-    LOG_TRACE("Start FFT C");
-    fft->fft(c, domainSize);
-    LOG_TRACE("c After fft:");
-    LOG_DEBUG(E.fr.toString(c[0]).c_str());
-    LOG_DEBUG(E.fr.toString(c[1]).c_str());
 
-    LOG_TRACE("Start ABC");
+    fft->fft(c, domainSize);
+
     threadPool.parallelFor(0, domainSize, [&] (int64_t begin, int64_t end, uint64_t idThread) {
         for (uint64_t i=begin; i<end; i++) {
             E.fr.mul(a[i], a[i], b[i]);
@@ -200,19 +146,12 @@ std::unique_ptr<Proof<Engine>> Prover<Engine>::prove(typename Engine::FrElement 
             E.fr.fromMontgomery(a[i], a[i]);
         }
     });
-    LOG_TRACE("abc:");
-    LOG_DEBUG(E.fr.toString(a[0]).c_str());
-    LOG_DEBUG(E.fr.toString(a[1]).c_str());
 
     delete [] b;
     delete [] c;
 
-    LOG_TRACE("Start Multiexp H");
     typename Engine::G1Point pih;
     E.g1.multiMulByScalarMSM(pih, pointsH, (uint8_t *)a, sizeof(a[0]), domainSize);
-    std::ostringstream ss1;
-    ss1 << "pih: " << E.g1.toString(pih);
-    LOG_DEBUG(ss1);
 
     delete [] a;
 

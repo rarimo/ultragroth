@@ -5,7 +5,7 @@ include(cmake/platform.cmake)
 set(USE_ASM    ON CACHE BOOL "Use asm implementation for Fr and Fq")
 set(USE_OPENMP ON CACHE BOOL "Use OpenMP")
 
-project(rapidsnark LANGUAGES CXX C ASM)
+project(ultragroth LANGUAGES CXX C ASM)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -53,7 +53,7 @@ endif()
 add_subdirectory(src)
 
 install(
-    TARGETS prover verifier rapidsnark rapidsnarkStatic rapidsnarkStaticFrFq test_prover fr fq
+    TARGETS prover verifier ultragroth ultragrothStatic ultragrothStaticFrFq fr fq
     RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
     BUNDLE DESTINATION ${CMAKE_INSTALL_PREFIX}/app
     LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
