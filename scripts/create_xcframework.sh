@@ -48,7 +48,7 @@ function create_framework() {
     fi
 }
 
-function copy_framework_files() {
+function copy_headers_files() {
     for fw in "$@"; do
         FRAMEWORK_PATH="Frameworks/fw/$FWNAME.framework"
 
@@ -104,6 +104,10 @@ strip_debug_symbols "${frameworks[@]}"
 echo "Merging static libraries..."
 
 merge_static_libraries "${frameworks[@]}"
+
+echo "Copying headers and modulemap files..."
+
+copy_headers_files "${frameworks[@]}"
 
 echo "Creating xcframework..."
 
