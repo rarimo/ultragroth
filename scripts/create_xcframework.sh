@@ -50,7 +50,7 @@ function create_framework() {
 
 function copy_headers_files() {
     for fw in "$@"; do
-        FRAMEWORK_PATH="Frameworks/fw/$FWNAME.framework"
+        FRAMEWORK_PATH="Frameworks/$fw/$FWNAME.framework"
 
         mkdir -p "$FRAMEWORK_PATH/Headers"
 
