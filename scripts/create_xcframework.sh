@@ -54,7 +54,7 @@ function copy_framework_files() {
 
         mkdir -p "$FRAMEWORK_PATH/Headers"
 
-        # cp headers/placeholder_to_change.h "$FRAMEWORK_PATH/Headers/$FWNAME.h"
+        cp src/prover.h "$FRAMEWORK_PATH/Headers/$FWNAME.h"
 
         mkdir -p $FRAMEWORK_PATH/Modules
         {
@@ -85,6 +85,9 @@ function merge_static_libraries() {
             artifacts/$fw/src/Release/libfr.a \
             artifacts/$fw/src/Release/libgmp.a \
             artifacts/$fw/src/Release/libultragroth.a
+        
+        lipo Frameworks/$fw/$FWNAME.framework/$FWNAME  -remove x86_64 -output Frameworks/$fw/$FWNAME.framework/$FWNAME || true
+        lipo Frameworks/$fw/$FWNAME.framework/$FWNAME  -remove arm64e -output Frameworks/$fw/$FWNAME.framework/$FWNAME || true
     done
 }
 
