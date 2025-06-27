@@ -40,7 +40,7 @@ function create_framework() {
     rm -rf "Frameworks/$XCFWNAME.xcframework"
     xcrun xcodebuild -create-xcframework \
         "${fw_paths[@]}" \
-        -output "Frameworks/$XCFWNAME.xcframework" > /dev/null 2>&1
+        -output "Frameworks/$XCFWNAME.xcframework"
 
     
     if [ -n "$CODE_SIGNER" ]; then
@@ -72,7 +72,7 @@ function strip_debug_symbols() {
         strip -x artifacts/$fw/src/Release/libfq.a \
             artifacts/$fw/src/Release/libfr.a \
             artifacts/$fw/src/Release/libgmp.a \
-            artifacts/$fw/src/Release/librapidsnark.a > /dev/null 2>&1
+            artifacts/$fw/src/Release/libultragroth.a
     done
 }
 
@@ -84,7 +84,7 @@ function merge_static_libraries() {
             artifacts/$fw/src/Release/libfq.a \
             artifacts/$fw/src/Release/libfr.a \
             artifacts/$fw/src/Release/libgmp.a \
-            artifacts/$fw/src/Release/librapidsnark.a > /dev/null 2>&1
+            artifacts/$fw/src/Release/libultragroth.a
     done
 }
 
@@ -107,7 +107,7 @@ echo "Creating xcframework..."
 create_framework "${frameworks[@]}"
 
 pushd "Frameworks"
-zip -X -9 -r "$XCFWNAME.xcframework.zip" "$XCFWNAME.xcframework" -i */$FWNAME -i *.plist -i *.h -i *.modulemap > /dev/null 2>&1
+zip -X -9 -r "$XCFWNAME.xcframework.zip" "$XCFWNAME.xcframework" -i */$FWNAME -i *.plist -i *.h -i *.modulemap
 popd
 
 echo "XCFramework checksum $(swift package compute-checksum Frameworks/$XCFWNAME.xcframework.zip)"

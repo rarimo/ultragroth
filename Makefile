@@ -40,8 +40,8 @@ ios:
 	@if [ ! -d "./depends/gmp/package_ios_arm64" ]; then echo "Looks like gmp lib is not built. Run './build_gmp.sh ios' first." && exit 1; fi
 	rm -rf artifacts/aarch64-apple-ios && mkdir -p artifacts/aarch64-apple-ios && cd artifacts/aarch64-apple-ios && \
 		cmake ../.. -GXcode -DTARGET_PLATFORM=IOS -DCMAKE_INSTALL_PREFIX=../../package_ios && \
-		xcodebuild -destination 'generic/platform=iOS' -scheme rapidsnarkStatic -project rapidsnark.xcodeproj -configuration Release && \
-		xcodebuild -destination 'generic/platform=iOS' -scheme rapidsnark -project rapidsnark.xcodeproj -configuration Release CODE_SIGNING_ALLOWED=NO && \
+		xcodebuild -destination 'generic/platform=iOS' -scheme ultragrothStatic -project ultragroth.xcodeproj -configuration Release && \
+		xcodebuild -destination 'generic/platform=iOS' -scheme ultragroth -project ultragroth.xcodeproj -configuration Release CODE_SIGNING_ALLOWED=NO && \
 		cp ../../depends/gmp/package_ios_arm64/lib/libgmp.a src/Release-iphoneos && \
 		mv src/Release-iphoneos src/Release && \
 		echo "" && echo "iOS artifacts built in artifacts/aarch64-apple-ios/src/Release" && echo ""
@@ -50,8 +50,8 @@ ios_simulator:
 	@if [ ! -d "./depends/gmp/package_iphone_simulator" ]; then echo "Looks like gmp lib is not built. Run './build_gmp.sh ios_simulator' first." && exit 1; fi
 	rm -rf artifacts/aarch64-apple-ios-sim && mkdir -p artifacts/aarch64-apple-ios-sim && cd artifacts/aarch64-apple-ios-sim && \
 		cmake ../.. -GXcode -DTARGET_PLATFORM=IOS_SIMULATOR -DCMAKE_INSTALL_PREFIX=../../package_ios_simulator -DUSE_ASM=NO && \
-		xcodebuild -destination 'generic/platform=iOS Simulator' -scheme rapidsnarkStatic -project rapidsnark.xcodeproj && \
-		xcodebuild -destination 'generic/platform=iOS Simulator' -scheme rapidsnark -project rapidsnark.xcodeproj CODE_SIGNING_ALLOWED=NO ARCHS=arm64 && \
+		xcodebuild -destination 'generic/platform=iOS Simulator' -scheme ultragrothStatic -project ultragroth.xcodeproj && \
+		xcodebuild -destination 'generic/platform=iOS Simulator' -scheme ultragroth -project ultragroth.xcodeproj CODE_SIGNING_ALLOWED=NO ARCHS=arm64 && \
 		cp ../../depends/gmp/package_iphone_simulator/lib/libgmp.a src/Debug-iphonesimulator && \
 		mv src/Debug-iphonesimulator src/Release && \
 		echo "" && echo "iOS Simulator artifacts built in artifacts/aarch64-apple-ios-sim/src/Release" && echo ""
