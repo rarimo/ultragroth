@@ -95,3 +95,8 @@ build/fq_asm.o
 build/fr_asm.o
 
 .idea/
+
+!build_ios_systems.sh
+
+Frameworks/
+artifacts/
