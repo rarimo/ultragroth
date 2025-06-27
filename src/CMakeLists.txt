@@ -113,11 +113,6 @@ set(
     ../depends/ffiasm/c/alt_bn128.cpp
 )
 
-if(USE_LOGGER)
-    set(LIB_SOURCES ${LIB_SOURCES} logger.cpp)
-    add_definitions(-DUSE_LOGGER)
-endif()
-
 include_directories(
     ../src
     ../build
@@ -140,7 +135,7 @@ target_link_libraries(verifier ultragrothStatic)
 
 add_library(ultragroth SHARED ${LIB_SOURCES})
 
-if((USE_LOGGER OR NOT USE_OPENMP) AND NOT TARGET_PLATFORM MATCHES "android")
+if(NOT USE_OPENMP AND NOT TARGET_PLATFORM MATCHES "android")
     target_link_libraries(prover pthread)
     target_link_libraries(verifier pthread)
 endif()

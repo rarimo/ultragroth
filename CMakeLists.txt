@@ -61,7 +61,7 @@ install(
 
 install(
     FILES "${GMP_LIB_DIR}/${GMP_LIB_FILE}"
-    LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
 
 install(
