@@ -252,7 +252,7 @@ build_ios()
 build_ios_simulator()
 {
 	libs=()
-	for ARCH in "arm64" "x86_64"; do
+	for ARCH in "arm64"; do
 		case "$ARCH" in
 			"arm64" )
 				echo "Building for iPhone Simulator arm64"
