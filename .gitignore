@@ -97,6 +97,7 @@ build/fr_asm.o
 .idea/
 
 !build_ios_systems.sh
+!build_android_system.sh
 
 Frameworks/
 artifacts/
