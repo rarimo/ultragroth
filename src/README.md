@@ -1,6 +1,6 @@
 # General Info
 
-This implementation is a 2-round variation of the Ultra-Groth protocol. It's highly specific and currently functions correctly only with circuits compiled using the Bionetta SDK.
+This implementation is a 2-round variation of the Ultra-Groth protocol. It's highly specific and currently functions correctly only with circuits compiled using the [Bionetta SDK](https://github.com/rarimo/bionetta).
 
 ---
 
