@@ -7,6 +7,13 @@
 #include "prover.h"
 #include "fileloader.hpp"
 
+
+void first_zero_symbol(std::vector<char> &arr) {
+    for (int i = 0; i < arr.size(); ++i)
+        if (arr[i] == 0)
+            arr.resize(i);
+}
+
 int main(int argc, char **argv)
 {
     if (argc != 5) {
@@ -62,10 +69,12 @@ int main(int argc, char **argv)
         }
 
         std::ofstream proofFile(proofFilename);
-        proofFile.write(proofBuffer.data(), proofSize);
+        first_zero_symbol(proofBuffer);
+        proofFile.write(proofBuffer.data(), proofBuffer.size());
 
         std::ofstream publicFile(publicFilename);
-        publicFile.write(publicBuffer.data(), publicSize);
+        first_zero_symbol(publicBuffer);
+        publicFile.write(publicBuffer.data(), publicBuffer.size());
 
     } catch (std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
