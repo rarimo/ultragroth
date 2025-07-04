@@ -6,6 +6,7 @@ bionetta-prover/
 *.json
 *.sym
 *.wtns
+*.uwtns
 *.Identifier
 *.r1cs
 wtns.txt
@@ -94,3 +95,9 @@ build/fq_asm.o
 build/fr_asm.o
 
 .idea/
+
+!build_ios_systems.sh
+!build_android_system.sh
+
+Frameworks/
+artifacts/

@@ -5,30 +5,10 @@ include(cmake/platform.cmake)
 set(USE_ASM    ON CACHE BOOL "Use asm implementation for Fr and Fq")
 set(USE_OPENMP ON CACHE BOOL "Use OpenMP")
 
-project(rapidsnark LANGUAGES CXX C ASM)
+project(ultragroth LANGUAGES CXX C ASM)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-
-# TODO Maybe pass path as argument to cmake configuration
-# Linux
-if (DEFINED CMAKE_LIB_PATH)
-    message("Found path to lib: ${CMAKE_LIB_PATH}.")
-    set(BIONETTA_PROVER_LIB ${CMAKE_LIB_PATH})
-
-elseif(UNIX AND NOT APPLE)
-    set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/libtest_mnist.a)
-
-# Mac OS
-elseif(APPLE)
-    set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/libtest_mnist.a)
-
-# Windows
-else()
-    set(BIONETTA_PROVER_LIB ${CMAKE_SOURCE_DIR}/libtest_mnist.a)
-endif()
-
 
 message("BITS_PER_CHUNK=" ${BITS_PER_CHUNK})
 message("USE_ASM=" ${USE_ASM})
@@ -73,7 +53,7 @@ endif()
 add_subdirectory(src)
 
 install(
-    TARGETS rapidsnark rapidsnarkStatic rapidsnarkStaticFrFq fr fq
+    TARGETS prover verifier ultragroth ultragrothStatic ultragrothStaticFrFq fr fq
     RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
     BUNDLE DESTINATION ${CMAKE_INSTALL_PREFIX}/app
     LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
@@ -82,6 +62,11 @@ install(
 install(
     FILES "${GMP_LIB_DIR}/${GMP_LIB_FILE}"
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+)
+
+install(
+    FILES src/prover.h src/verifier.h
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include
 )
 
 enable_testing()

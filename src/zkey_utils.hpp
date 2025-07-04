@@ -3,8 +3,10 @@
 
 #include <gmp.h>
 #include <memory>
+#include <cstdint>
 
 #include "binfile_utils.hpp"
+
 
 // Header(1)
 //      prover_type (1337 for UltraGroth)
@@ -43,6 +45,32 @@ namespace ZKeyUtils {
 
     class Header {
 
+    public:
+        uint32_t n8q;
+        mpz_t qPrime;
+        uint32_t n8r;
+        mpz_t rPrime;
+
+        uint32_t nVars;
+        uint32_t nPublic;
+        uint32_t domainSize;
+        uint64_t nCoefs;
+
+        void *vk_alpha1;
+        void *vk_beta1;
+        void *vk_beta2;
+        void *vk_gamma2;
+        void *vk_delta1;
+        void *vk_delta2;
+
+        Header();
+        ~Header();
+    };
+
+    std::unique_ptr<Header> loadHeader(BinFileUtils::BinFile *f);
+
+
+    class UltraGrothHeader {
 
     public:
         uint32_t n8q;
@@ -58,7 +86,7 @@ namespace ZKeyUtils {
         uint32_t num_indexes_c1;
         uint32_t num_indexes_c2;
         uint32_t rand_indx;
-        
+
         void *alpha1;
         void *beta1;
         void *beta2;
@@ -68,11 +96,11 @@ namespace ZKeyUtils {
         void *final_delta1;
         void *final_delta2;
 
-        Header();
-        ~Header();
+        UltraGrothHeader();
+        ~UltraGrothHeader();
     };
 
-    std::unique_ptr<Header> loadHeader(BinFileUtils::BinFile *f);
+    std::unique_ptr<UltraGrothHeader> ultra_groth_loadHeader(BinFileUtils::BinFile *f);
     std::tuple<std::vector<uint32_t>, std::vector<uint32_t>> load_indexes(std::string path);
 }
 

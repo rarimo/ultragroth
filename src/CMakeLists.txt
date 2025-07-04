@@ -1,5 +1,5 @@
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -mtune=native")
-set(CMAKE_C_FLAGS_RELEASE   "-O3 -march=native -mtune=native")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_C_FLAGS_RELEASE   "-O3")
 
 link_libraries(${GMP_LIB})
 
@@ -31,7 +31,6 @@ if(USE_ASM AND ARCH MATCHES "x86_64")
         DEPENDS ${CMAKE_SOURCE_DIR}/build/fq.asm
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/build
     )
-
     add_custom_command(
         OUTPUT ${CMAKE_SOURCE_DIR}/build/fr_asm.o
         COMMAND nasm ${NASM_FLAGS} fr.asm -o fr_asm.o
@@ -96,23 +95,23 @@ set(
     binfile_utils.cpp
     zkey_utils.hpp
     zkey_utils.cpp
+    wtns_utils.hpp
+    wtns_utils.cpp
     fileloader.cpp
     fileloader.hpp
-    rounds_extern.h
-    prover_ultra_groth.cpp
-    prover_ultra_groth.hpp
-    verifier_ultra_groth.cpp
-    verifier_ultra_groth.hpp
+    prover.cpp
+    prover.h
+    verifier.cpp
+    verifier.h
+    prover.cpp
+    prover.h
+    verifier.cpp
+    verifier.h 
     ../depends/ffiasm/c/misc.cpp
     ../depends/ffiasm/c/naf.cpp
     ../depends/ffiasm/c/splitparstr.cpp
     ../depends/ffiasm/c/alt_bn128.cpp
 )
-
-if(USE_LOGGER)
-    set(LIB_SOURCES ${LIB_SOURCES} logger.cpp)
-    add_definitions(-DUSE_LOGGER)
-endif()
 
 include_directories(
     ../src
@@ -121,23 +120,48 @@ include_directories(
     ../depends/json/single_include
 )
 
+add_library(ultragrothStatic STATIC ${LIB_SOURCES})
+set_target_properties(ultragrothStatic PROPERTIES OUTPUT_NAME ultragroth)
 
-add_library(rapidsnarkStatic STATIC ${LIB_SOURCES})
-set_target_properties(rapidsnarkStatic PROPERTIES OUTPUT_NAME rapidsnark)
+add_library(ultragrothStaticFrFq STATIC ${LIB_SOURCES} ${FQ_SOURCES} ${FR_SOURCES})
+set_target_properties(ultragrothStaticFrFq PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(ultragrothStaticFrFq PROPERTIES OUTPUT_NAME ultragroth-fr-fq)
 
-add_library(rapidsnarkStaticFrFq STATIC ${LIB_SOURCES} ${FQ_SOURCES} ${FR_SOURCES})
-set_target_properties(rapidsnarkStaticFrFq PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(rapidsnarkStaticFrFq PROPERTIES OUTPUT_NAME rapidsnark-fr-fq)
+add_executable(prover main_prover.cpp)
+target_link_libraries(prover ultragrothStatic)
 
+add_executable(verifier main_verifier.cpp)
+target_link_libraries(verifier ultragrothStatic)
 
-find_package(OpenSSL REQUIRED)
+add_library(ultragroth SHARED ${LIB_SOURCES})
+
+if(NOT USE_OPENMP AND NOT TARGET_PLATFORM MATCHES "android")
+    target_link_libraries(prover pthread)
+    target_link_libraries(verifier pthread)
+endif()
+
+if(USE_SODIUM)
+    target_link_libraries(prover sodium)
+endif()
+
 add_executable(prover_ultra_groth main_prover_ultra_groth.cpp)
-target_link_libraries(prover_ultra_groth rapidsnarkStatic ${BIONETTA_PROVER_LIB} )
+target_link_libraries(prover_ultra_groth ultragrothStatic)
 
-
-find_package(OpenSSL REQUIRED)
 add_executable(verifier_ultra_groth main_verifier_ultra_groth.cpp)
-target_link_libraries(verifier_ultra_groth rapidsnarkStatic)
+target_link_libraries(verifier_ultra_groth ultragrothStatic)
 
-add_library(rapidsnark SHARED ${LIB_SOURCES})
+if(OpenMP_CXX_FOUND)
+
+    if(TARGET_PLATFORM MATCHES "android")
+        target_link_libraries(prover -static-openmp -fopenmp)
+        target_link_libraries(verifier -static-openmp -fopenmp)
+        target_link_libraries(ultragroth -static-openmp -fopenmp)
+
+    elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+        target_link_libraries(prover OpenMP::OpenMP_CXX)
+        target_link_libraries(verifier OpenMP::OpenMP_CXX)
+    endif()
+
+endif()
+
 

@@ -1,16 +1,16 @@
 #include <stdexcept>
-
-#include "zkey_utils.hpp"
 #include <tuple>
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <fstream>
 #include <string>
 
+#include "zkey_utils.hpp"
+
+
 using json = nlohmann::json;
 
 namespace ZKeyUtils {
-
 
 Header::Header() {
     mpz_init(qPrime);
@@ -36,6 +36,53 @@ std::tuple<std::vector<uint32_t>, std::vector<uint32_t>> load_indexes(std::strin
     std::vector<uint32_t> c2 = data["c2"].get<std::vector<uint32_t>>();
 
     return {c1, c2};
+}
+
+
+std::unique_ptr<Header> loadHeader(BinFileUtils::BinFile *f) {
+
+    std::unique_ptr<Header> h(new Header());
+
+    f->startReadSection(1);
+    uint32_t protocol = f->readU32LE();
+    if (protocol != 1) {
+        throw std::invalid_argument( "zkey file is not groth16" );
+    }
+    f->endReadSection();
+
+    f->startReadSection(2);
+
+    h->n8q = f->readU32LE();
+    mpz_import(h->qPrime, h->n8q, -1, 1, -1, 0, f->read(h->n8q));
+
+    h->n8r = f->readU32LE();
+    mpz_import(h->rPrime, h->n8r , -1, 1, -1, 0, f->read(h->n8r));
+
+    h->nVars = f->readU32LE();
+    h->nPublic = f->readU32LE();
+    h->domainSize = f->readU32LE();
+
+    h->vk_alpha1 = f->read(h->n8q*2);
+    h->vk_beta1 = f->read(h->n8q*2);
+    h->vk_beta2 = f->read(h->n8q*4);
+    h->vk_gamma2 = f->read(h->n8q*4);
+    h->vk_delta1 = f->read(h->n8q*2);
+    h->vk_delta2 = f->read(h->n8q*4);
+    f->endReadSection();
+
+    h->nCoefs = f->getSectionSize(4) / (12 + h->n8r);
+
+    return h;
+}
+
+UltraGrothHeader::UltraGrothHeader() {
+    mpz_init(qPrime);
+    mpz_init(rPrime);
+}
+
+UltraGrothHeader::~UltraGrothHeader() {
+    mpz_clear(qPrime);
+    mpz_clear(rPrime);
 }
 
 /*
@@ -73,14 +120,14 @@ std::tuple<std::vector<uint32_t>, std::vector<uint32_t>> load_indexes(std::strin
     Contributions(13)
 */
 
-std::unique_ptr<Header> loadHeader(BinFileUtils::BinFile *f) {
+std::unique_ptr<UltraGrothHeader> ultra_groth_loadHeader(BinFileUtils::BinFile *f) {
 
-    std::unique_ptr<Header> h(new Header());
+    std::unique_ptr<UltraGrothHeader> h(new UltraGrothHeader());
 
     f->startReadSection(1);
     uint32_t protocol = f->readU32LE();
     if (protocol != 1337) {
-        throw std::invalid_argument( "zkey file is not Ultragroth" );
+        throw std::invalid_argument( "zkey file is not ultragroth" );
     }
     f->endReadSection();
 
@@ -95,7 +142,7 @@ std::unique_ptr<Header> loadHeader(BinFileUtils::BinFile *f) {
     h->nVars = f->readU32LE();
     h->nPublic = f->readU32LE();
     h->domainSize = f->readU32LE();
-    
+
     h->num_indexes_c1 = f->readU32LE();
     h->num_indexes_c2 = f->readU32LE();
     h->rand_indx = f->readU32LE();

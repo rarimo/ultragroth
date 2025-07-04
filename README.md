@@ -1,8 +1,8 @@
-## Important note 
+# Important note
 
 **This is a new implementation of rapidsnark. The original (and now obsoleted) implemenation is available here: [rapidsnark-old](https://github.com/iden3/rapidsnark-old).**
 
-# rapidsnark
+## rapidsnark
 
 Rapidsnark is a zkSnark proof generation written in C++ and intel/arm assembly. That generates proofs created in [circom](https://github.com/iden3/circom) and [snarkjs](https://github.com/iden3/snarkjs) very fast.
 

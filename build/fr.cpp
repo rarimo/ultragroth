@@ -211,7 +211,7 @@ void RawFr::set(Element &r, int value) {
   mpz_init(mr);
   mpz_set_si(mr, value);
   if (value < 0) {
-    mpz_add(mr, mr, q);
+      mpz_add(mr, mr, q);
   }
 
   mpz_export((void *)(r.v), NULL, -1, 8, -1, 0, mr);

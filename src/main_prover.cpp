@@ -18,7 +18,7 @@ int main(int argc, char **argv)
 {
     if (argc != 5) {
         std::cerr << "Invalid number of parameters" << std::endl;
-        std::cerr << "Usage: prover <circuit.zkey> <witness.uwtns> <proof.json> <public.json>" << std::endl;
+        std::cerr << "Usage: prover <circuit.zkey> <witness.wtns> <proof.json> <public.json>" << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -36,7 +36,7 @@ int main(int argc, char **argv)
         unsigned long long       proofSize = 0;
         char                     errorMsg[1024];
 
-        int error = ultra_groth_public_size_for_zkey_buf(
+        int error = groth16_public_size_for_zkey_buf(
                      zkeyFile.dataBuffer(),
                      zkeyFile.dataSize(),
                      &publicSize,
@@ -47,12 +47,12 @@ int main(int argc, char **argv)
             throw std::runtime_error(errorMsg);
         }
 
-        ultra_groth_proof_size(&proofSize);
+        groth16_proof_size(&proofSize);
 
         publicBuffer.resize(publicSize);
         proofBuffer.resize(proofSize);
 
-        error = ultra_groth_prover(
+        error = groth16_prover(
                    zkeyFile.dataBuffer(),
                    zkeyFile.dataSize(),
                    wtnsFile.dataBuffer(),

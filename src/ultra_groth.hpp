@@ -5,6 +5,7 @@
 #include <array>
 #include <vector>
 #include <tuple>
+#include <cstdint>
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
@@ -17,6 +18,47 @@ using json = nlohmann::json;
 #define PROVER_INVALID_WITNESS_LENGTH 0x3
 
 namespace UltraGroth {
+
+    struct LookupInfo {
+
+        uint32_t *chunks;
+        uint64_t chunks_len;
+
+        uint32_t *frequencies;
+        uint64_t frequencies_len;
+
+        uint32_t *wtns_indxs;
+        uint64_t wtns_indxs_len;
+
+        uint32_t *push_indxs;
+        uint64_t push_indxs_len;
+
+    LookupInfo( 
+        uint32_t* chunks, uint64_t chunks_len, 
+        uint32_t* frequencies, uint64_t frequencies_len, 
+        uint32_t* wtns_indxs, uint64_t wtns_indxs_len, 
+        uint32_t* push_indxs, uint64_t push_indxs_len
+    ) :
+        chunks(chunks),
+        chunks_len(chunks_len),
+        frequencies(frequencies),
+        frequencies_len(frequencies_len),
+        wtns_indxs(wtns_indxs),
+        wtns_indxs_len(wtns_indxs_len),
+        push_indxs(push_indxs),
+        push_indxs_len(push_indxs_len)
+        
+        {}
+
+        //~LookupInfo() {
+        //    std::cout << "destructor in" << std::endl;
+        //    delete[] chunks;
+        //    delete[] frequencies;
+        //    delete[] wtns_indxs;
+        //    delete[] push_indxs;
+        //    std::cout << "destructor out" << std::endl;
+        //};
+    };
 
     template <typename Engine>
     class Proof {
@@ -163,7 +205,7 @@ namespace UltraGroth {
         }
 
         // Function to execute entire proving process
-        std::unique_ptr<Proof<Engine>> prove(const uint8_t* bytes, size_t json_size);
+        std::unique_ptr<Proof<Engine>> prove(typename Engine::FrElement* wtns, LookupInfo &lookupInfo);
 
         // Function to execute common round of proving process
         // Pointer to accumulator is passed to function; accumulator size is 32
