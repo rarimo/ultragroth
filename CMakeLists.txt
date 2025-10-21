@@ -59,10 +59,15 @@ install(
     LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
 
-install(
-    FILES "${GMP_LIB_DIR}/${GMP_LIB_FILE}"
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-)
+if (EXISTS "${GMP_LIB_DIR}/${GMP_LIB_FILE}")
+    install(
+        FILES "${GMP_LIB_DIR}/${GMP_LIB_FILE}"
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    )
+else()
+    # Arch Linux has a built-in GMP library.
+    message(WARNING "System libgmp will be used (no local libgmp.a to install).")
+endif()
 
 install(
     FILES src/prover.h src/verifier.h
