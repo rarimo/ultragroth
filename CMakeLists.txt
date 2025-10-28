@@ -7,6 +7,19 @@ set(USE_OPENMP ON CACHE BOOL "Use OpenMP")
 
 project(ultragroth LANGUAGES CXX C ASM)
 
+if(EXISTS "/proc/cpuinfo")
+    file(READ "/proc/cpuinfo" CPUINFO)
+    string(TOLOWER "${CPUINFO}" CPUINFO_LC)
+    if(NOT CPUINFO_LC MATCHES "avx2")
+        message(WARNING "CPU does not support AVX2 - disabling ASM optimizations.")
+        set(USE_ASM OFF CACHE BOOL "Disable ASM optimizations" FORCE)
+    endif()
+    if(NOT CPUINFO_LC MATCHES "fma")
+        message(WARNING "CPU does not support FMA - disabling ASM optimizations.")
+        set(USE_ASM OFF CACHE BOOL "Disable ASM optimizations" FORCE)
+    endif()
+endif()
+
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -59,14 +72,18 @@ install(
     LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
 
-if (EXISTS "${GMP_LIB_DIR}/${GMP_LIB_FILE}")
+# Check built-in GMP lib
+if (EXISTS "/etc/os-release")
+    file(READ "/etc/os-release" OS_RELEASE_CONTENT)
+endif()
+
+if (OS_RELEASE_CONTENT MATCHES "Arch Linux")
+    message(STATUS "Detected Arch Linux - using system GMP.")
+else()
     install(
         FILES "${GMP_LIB_DIR}/${GMP_LIB_FILE}"
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
     )
-else()
-    # Arch Linux has a built-in GMP library.
-    message(WARNING "System libgmp will be used (no local libgmp.a to install).")
 endif()
 
 install(
