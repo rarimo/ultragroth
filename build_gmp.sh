@@ -49,7 +49,7 @@ build_aarch64()
 
     if [ -d "$PACKAGE_DIR" ]; then
         echo "aarch64 package is built already. See $PACKAGE_DIR"
-        return 0
+        return 1
     fi
 
 
@@ -75,7 +75,7 @@ build_host()
 
     if [ -d "$PACKAGE_DIR" ]; then
         echo "Host package is built already. See $PACKAGE_DIR"
-        return 0
+        return 1
     fi
 
     rm -rf "$BUILD_DIR"
@@ -96,7 +96,7 @@ build_host_noasm()
 
     if [ -d "$PACKAGE_DIR" ]; then
         echo "Host package is built already. See $PACKAGE_DIR"
-        return 0
+        return 1
     fi
 
     rm -rf "$BUILD_DIR"
@@ -117,7 +117,7 @@ build_android()
 
     if [ -d "$PACKAGE_DIR" ]; then
         echo "Android package is built already. See $PACKAGE_DIR"
-        return 0
+        return 1
     fi
 
     if [ -z "$ANDROID_NDK" ]; then
@@ -125,7 +125,7 @@ build_android()
         echo "ERROR: ANDROID_NDK environment variable is not set."
         echo "       It must be an absolute path to the root directory of Android NDK."
         echo "       For instance /home/test/Android/Sdk/ndk/23.1.7779620"
-        return 0
+        return 1
     fi
 
     if [ "$(uname)" == "Darwin" ]; then
@@ -166,7 +166,7 @@ build_android_x86_64()
 
     if [ -d "$PACKAGE_DIR" ]; then
         echo "Android package is built already. See $PACKAGE_DIR"
-        return 0
+        return 1
     fi
 
     if [ -z "$ANDROID_NDK" ]; then
@@ -174,7 +174,7 @@ build_android_x86_64()
         echo "ERROR: ANDROID_NDK environment variable is not set."
         echo "       It must be an absolute path to the root directory of Android NDK."
         echo "       For instance /home/test/Android/Sdk/ndk/23.1.7779620"
-        return 0
+        return 1
     fi
 
     if [ "$(uname)" == "Darwin" ]; then
@@ -215,7 +215,7 @@ build_ios()
 
     if [ -d "$PACKAGE_DIR" ]; then
         echo "iOS package is built already. See $PACKAGE_DIR"
-        return 0
+        return 1
     fi
 
     export SDK="iphoneos"
@@ -252,7 +252,7 @@ build_ios()
 build_ios_simulator()
 {
 	libs=()
-	for ARCH in "arm64"; do
+	for ARCH in "arm64" "x86_64"; do
 		case "$ARCH" in
 			"arm64" )
 				echo "Building for iPhone Simulator arm64"
@@ -322,6 +322,7 @@ build_macos_arch()
   cd "$BUILD_DIR"
   ../configure --prefix="${PACKAGE_DIR}" \
          CC="$(xcrun --sdk macosx --find clang)" \
+         CPP_FOR_BUILD="$(xcrun --sdk macosx --find clang) -E" \
          CFLAGS="-O3 -isysroot $(xcrun --sdk macosx --show-sdk-path) ${ARCH_FLAGS} -fvisibility=hidden -mmacos-version-min=14.0" \
          LDFLAGS="" \
          --host "${ARCH}-apple-darwin" --disable-assembly --enable-static --disable-shared --with-pic &&
