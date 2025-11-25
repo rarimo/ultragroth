@@ -49,7 +49,7 @@ build_aarch64()
 
     if [ -d "$PACKAGE_DIR" ]; then
         echo "aarch64 package is built already. See $PACKAGE_DIR"
-        return 1
+        return 0
     fi
 
 
@@ -75,7 +75,7 @@ build_host()
 
     if [ -d "$PACKAGE_DIR" ]; then
         echo "Host package is built already. See $PACKAGE_DIR"
-        return 1
+        return 0
     fi
 
     rm -rf "$BUILD_DIR"
@@ -96,7 +96,7 @@ build_host_noasm()
 
     if [ -d "$PACKAGE_DIR" ]; then
         echo "Host package is built already. See $PACKAGE_DIR"
-        return 1
+        return 0
     fi
 
     rm -rf "$BUILD_DIR"
@@ -117,7 +117,7 @@ build_android()
 
     if [ -d "$PACKAGE_DIR" ]; then
         echo "Android package is built already. See $PACKAGE_DIR"
-        return 1
+        return 0
     fi
 
     if [ -z "$ANDROID_NDK" ]; then
@@ -166,7 +166,7 @@ build_android_x86_64()
 
     if [ -d "$PACKAGE_DIR" ]; then
         echo "Android package is built already. See $PACKAGE_DIR"
-        return 1
+        return 0
     fi
 
     if [ -z "$ANDROID_NDK" ]; then
@@ -215,7 +215,7 @@ build_ios()
 
     if [ -d "$PACKAGE_DIR" ]; then
         echo "iOS package is built already. See $PACKAGE_DIR"
-        return 1
+        return 0
     fi
 
     export SDK="iphoneos"
